@@ -520,6 +520,7 @@ const KEY_MUTED = 'brick-crew.muted';
 const KEY_NAME = 'brick-crew.name';
 const KEY_BOARD = 'brick-crew.board';
 const KEY_PENDING = 'brick-crew.pending';
+const KEY_SAVE = 'brick-crew.save';
 const MAX_LIVES = 9;
 const NAME_MAX = 24;                    // 순위표에 올리는 이름 길이 한도
 const PULL_R = 150;                     // 자철석이 공을 끌어당기는 거리
@@ -754,6 +755,7 @@ const game = {
   lodes: [], // 이번 벽의 자철석들
   shake: 0, // 폭발로 화면이 흔들리는 남은 시간(초)
   submitted: false, // 이번 판 기록을 순위표에 올렸는지
+  resumed: false, // 저장해 둔 판을 막 불러온 상태인지 (안내 문구용)
   demo: false, // 데모(혼자 돌아가는 화면) 중인지
   demoT: 0, // 데모가 돌아간 시간(초)
   demoWait: 0, // 데모에서 공을 쏘기 전 잠깐 기다리는 시간
@@ -1423,6 +1425,24 @@ function addScore(n) {
 
 function saveBest() {
   store.set(KEY_BEST, game.best);
+  saveGame();
+}
+
+// 하던 판을 기기에 저장: 창을 닫거나 폰을 꺼도 다음에 이어서 할 수 있게.
+// 레벨·점수·남은 공·남은 벽돌을 저장함 (공 위치는 저장하지 않고, 이어할 때 패들 위에서 다시 시작)
+function saveGame() {
+  if (game.demo) return;
+  const snap = snapshot();
+  if (snap.mode === 'ready' || snap.mode === 'playing') {
+    store.set(KEY_SAVE, JSON.stringify(snap));
+    return;
+  }
+  // 게임이 끝났거나 시작 전이면 저장해 둔 판을 지움
+  try {
+    localStorage.removeItem(KEY_SAVE);
+  } catch (e) {
+    /* 저장소를 못 쓰는 환경 */
+  }
 }
 
 function levelBanner(kicker = '') {
@@ -1447,6 +1467,7 @@ function startGame() {
   game.lives = START_LIVES;
   game.level = 1;
   game.startBest = game.best;
+  game.resumed = false;
   game.submitted = false;
   game.shake = 0;
   ranks.mine = null;
@@ -1593,6 +1614,7 @@ function loseLife() {
   resetBall();
   game.mode = 'ready';
   game.armed = false;
+  saveGame();
   game.banner = { kicker: '', title: '놓쳤어요', sub: `남은 공 ${game.lives}개`, tip: '', t: 0, dur: 1.6 };
 }
 
@@ -1647,7 +1669,8 @@ function pause() {
 function showPaused() {
   showOverlay({
     eyebrow: `레벨 ${game.level} · ${game.wallName}`,
-    title: '일시정지',
+    title: game.resumed ? '이어하기' : '일시정지',
+    text: game.resumed ? '지난번에 하던 판을 불러왔어요. 공은 패들 위에서 다시 시작해요.' : '',
     spec: [
       ['점수', `${fmt(game.score)}점`],
       ['남은 공', `${game.lives}개`],
@@ -1660,6 +1683,7 @@ function showPaused() {
 
 function resume() {
   if (game.mode !== 'paused') return;
+  game.resumed = false;
   sound.unlock();
   hideOverlay();
   game.mode = game.resumeMode;
@@ -2860,6 +2884,7 @@ function update(dt) {
 }
 
 let last = performance.now();
+let lastSave = 0;
 function frame(now) {
   requestAnimationFrame(frame);
   const dt = Math.min(0.05, Math.max(0, (now - last) / 1000));
@@ -2872,6 +2897,10 @@ function frame(now) {
     else if (game.mode === 'over' && view === '' && idle > 20000 && (game.submitted || game.score === 0 || !boardOn())) showMenu();
   }
   update(dt);
+  if (game.mode === 'playing' && !game.demo && now - lastSave > 5000) {
+    lastSave = now;
+    saveGame();
+  }
   const active = game.mode === 'ready' || game.mode === 'playing' || particles.length > 0;
   if (active || needsRender) {
     render();
@@ -3106,7 +3135,13 @@ function start(saved) {
   loadBoard().then((ok) => {
     if (ok && ui.overlay.dataset.view === 'menu' && game.mode === 'menu' && !ui.overlay.hidden) showMenu();
   });
-  if (!restore(saved)) showMenu();
+  // 페이지가 넘겨준 상태가 없으면 기기에 저장해 둔 판을 불러옴
+  const kept = saved && saved.v ? saved : readJson(KEY_SAVE, null);
+  game.resumed = !(saved && saved.v) && !!kept;
+  if (!restore(kept)) {
+    game.resumed = false;
+    showMenu();
+  }
   if ('ResizeObserver' in window) new ResizeObserver(() => layout()).observe(stage);
   else window.addEventListener('resize', layout);
   last = performance.now();
