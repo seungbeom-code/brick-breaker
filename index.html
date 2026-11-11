@@ -48,6 +48,22 @@
     --safety-deep: #d49f00;
     --wall-shadow: rgba(20, 24, 30, 0.16);
     --board-shadow: 0 12px 32px rgba(20, 24, 30, 0.16);
+    --good: #2a9765;
+    --bad: #d8452f;
+    --pole-s: #2f6fd8;
+    --gold: #ffd24a;
+    --st-sand: #dcbd8b;
+    --st-granite: #aaa3a1;
+    --st-obsid: #221f2b;
+    --st-blast: #4d4845;
+    --st-lode: #70757d;
+    --st-jade: #3f9f78;
+    --st-marble: #f1ede4;
+    --st-quartz: #b792e6;
+    --st-amber: #e39a2b;
+    --st-gold: #5c5248;
+    --st-meteor: #3d312d;
+    --st-diamond: #c6eafb;
     --font-display: "Black Han Sans", "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
     --font-body: "IBM Plex Sans KR", "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
     color-scheme: light;
@@ -79,6 +95,14 @@
     --safety-deep: #e0a800;
     --wall-shadow: rgba(0, 0, 0, 0.4);
     --board-shadow: 0 14px 36px rgba(0, 0, 0, 0.5);
+    --good: #4cc38a;
+    --bad: #ff6a4d;
+    --pole-s: #5b93f0;
+    --st-obsid: #2f2a3a;
+    --st-blast: #5b5551;
+    --st-marble: #e4e0d6;
+    --st-gold: #6a5f54;
+    --st-meteor: #5a4840;
       color-scheme: dark;
     }
   }
@@ -108,6 +132,14 @@
     --safety-deep: #e0a800;
     --wall-shadow: rgba(0, 0, 0, 0.4);
     --board-shadow: 0 14px 36px rgba(0, 0, 0, 0.5);
+    --good: #4cc38a;
+    --bad: #ff6a4d;
+    --pole-s: #5b93f0;
+    --st-obsid: #2f2a3a;
+    --st-blast: #5b5551;
+    --st-marble: #e4e0d6;
+    --st-gold: #6a5f54;
+    --st-meteor: #5a4840;
     color-scheme: dark;
   }
 
@@ -292,6 +324,121 @@
   }
   .btn-primary:active { transform: translateY(1px); }
   .btn-secondary { background: transparent; color: var(--ink); border: 2px solid var(--line); }
+  .btn:disabled { opacity: 0.45; cursor: default; }
+  .lives-count { font-family: var(--font-display); font-size: 20px; line-height: 1; }
+
+  /* 안내판 안의 추가 화면: 순위표 · 돌 도감 · 이름 입력 */
+  .sign.wide { max-width: none; }
+  .overlay:has(.sign.wide) { padding: 8px; }
+  .sign.wide .sign-body { padding-inline: 8px; }
+  .sign-custom { display: grid; gap: 10px; min-width: 0; }
+  .sign-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 0 18px; margin-top: -6px; }
+  .link-btn {
+    min-height: 40px;
+    padding: 0 6px;
+    border: 0;
+    background: none;
+    color: var(--ink);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+  }
+  .link-btn:focus-visible { outline: 3px solid var(--safety); outline-offset: 2px; }
+  .note { margin: 0; font-size: 14px; line-height: 1.55; color: var(--muted); }
+
+  .board-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    max-height: min(46vh, 340px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+    border-top: 1.5px dashed var(--line);
+  }
+  .board-row {
+    display: grid;
+    grid-template-columns: 24px minmax(0, 1fr) auto auto;
+    align-items: baseline;
+    gap: 8px;
+    padding: 7px 6px;
+    border-bottom: 1px solid var(--line);
+    font-size: 14px;
+    line-height: 1.35;
+    font-variant-numeric: tabular-nums;
+  }
+  .board-row .rank { color: var(--muted); font-weight: 700; text-align: right; }
+  .board-row .who { min-width: 0; font-weight: 600; }
+  .board-row .lv { color: var(--muted); font-size: 12px; white-space: nowrap; }
+  .board-row .pts { font-weight: 700; white-space: nowrap; }
+  .board-row.mine { background: var(--safety); color: var(--safety-ink); border-radius: 6px; border-bottom-color: transparent; }
+  .board-row.mine .rank, .board-row.mine .lv { color: inherit; }
+  .board-row.gap { display: block; padding: 0; text-align: center; color: var(--muted); border-bottom: 0; }
+
+  .codex {
+    margin: 0;
+    padding: 12px 0 0;
+    list-style: none;
+    display: grid;
+    gap: 11px;
+    max-height: min(52vh, 380px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+    border-top: 1.5px dashed var(--line);
+  }
+  .codex li { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 1px 12px; font-size: 14px; line-height: 1.45; }
+  .codex canvas { grid-row: span 2; width: 56px; height: 17px; margin-top: 3px; border-radius: 2px; box-shadow: 0 0 0 2px var(--mortar); }
+  .codex b { font-weight: 700; }
+  .codex small { margin-left: 6px; color: var(--muted); font-size: 12px; font-weight: 600; }
+  .codex span { color: var(--muted); }
+
+  .name-field {
+    min-height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 10px;
+    border: 2px solid var(--ink);
+    border-radius: 10px;
+    background: var(--page);
+    font-size: 21px;
+    font-weight: 700;
+    line-height: 1.2;
+    white-space: pre-wrap;
+    text-align: center;
+  }
+  .name-field .hint { color: var(--muted); font-size: 15px; font-weight: 400; }
+  .caret { flex: none; width: 2px; height: 24px; margin-left: 2px; background: var(--ink); animation: blink 1s steps(2, start) infinite; }
+  @keyframes blink { to { visibility: hidden; } }
+  .keys { display: grid; gap: 6px; }
+  .key-row { display: flex; justify-content: center; gap: 3px; }
+  .key-row.inset { padding-inline: 5%; }
+  .key {
+    flex: 1 1 0;
+    min-width: 0;
+    height: 46px;
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    background: var(--page);
+    color: var(--ink);
+    font: inherit;
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  .key:active, .key.on { background: var(--safety); color: var(--safety-ink); border-color: var(--cap); }
+  .key:focus-visible { outline: 3px solid var(--safety); outline-offset: 1px; }
+  .key.fn { flex-grow: 1.5; font-size: 13px; }
+  .key.space { flex-grow: 5; font-size: 13px; }
+  @media (prefers-reduced-motion: reduce) {
+    .caret { animation: none; }
+  }
 
   @media (max-width: 360px) {
     .hud { gap: 12px; }
@@ -327,7 +474,7 @@
     <div class="board" id="board">
       <canvas id="game" role="img" aria-label="벽돌깨기 경기장"></canvas>
       <div class="overlay" id="overlay">
-        <section class="sign" role="dialog" aria-modal="true" aria-labelledby="sign-title">
+        <section class="sign" id="sign" role="dialog" aria-modal="true" aria-labelledby="sign-title">
           <div class="sign-band" aria-hidden="true"></div>
           <div class="sign-body">
             <p class="sign-eyebrow" id="sign-eyebrow">작업 안내</p>
@@ -337,10 +484,12 @@
               <dt>조작</dt><dd>화면을 누른 채 좌우로 밀고, 손을 떼면 발사</dd>
               <dt>단단한 벽돌</dt><dd>클링커 2번, 내화벽돌 3번</dd>
             </dl>
+            <div class="sign-custom" id="sign-custom" hidden></div>
             <div class="sign-actions">
               <button class="btn btn-primary" id="btn-primary" type="button">시작하기</button>
               <button class="btn btn-secondary" id="btn-secondary" type="button" hidden>처음부터</button>
             </div>
+            <div class="sign-links" id="sign-links" hidden></div>
           </div>
         </section>
       </div>
@@ -367,6 +516,15 @@ const MAX_BOUNCE = (62 * Math.PI) / 180; // 패들 끝에 맞았을 때 최대 �
 const KEY_SPEED = 560;
 const KEY_BEST = 'brick-crew.best';
 const KEY_MUTED = 'brick-crew.muted';
+const KEY_NAME = 'brick-crew.name';
+const KEY_BOARD = 'brick-crew.board';
+const KEY_PENDING = 'brick-crew.pending';
+const MAX_LIVES = 9;
+const NAME_MAX = 24;                    // 순위표에 올리는 이름 길이 한도
+const PULL_R = 95;                      // 자철석이 공을 끌어당기는 거리
+
+// 순위표 서버 (Firebase Firestore). project가 비어 있으면 순위표 기능이 꺼짐
+const BOARD = { project: '', top: 20 };
 
 /* ───────── 레벨: 실제 벽돌 쌓기 방식 (단위 mm) ─────────
    pattern  S = 길이면(190mm), H = 마구리면(90mm), SH = 둘을 번갈아
@@ -418,6 +576,37 @@ const WALLS = [
   },
 ];
 
+/* ───────── 돌: 4레벨마다 새 돌이 하나씩 등장 ─────────
+   hp      깨는 데 필요한 횟수          pts     한 번 맞힐 때 점수
+   max     한 벽에 들어가는 최대 개수   dark    어두운 돌 (금을 밝게 그림)
+   pierce  공이 튕기지 않고 뚫고 지나감 blast   깨지면 둘레 벽돌에 피해
+   fast · slow    맞으면 그 시간(초) 동안 공이 빨라짐 · 느려짐
+   wide · double  깨면 그 시간(초) 동안 패들이 길어짐 · 점수 두 배
+   pull    가까운 공을 끌어당김         scatter 공이 엉뚱한 각도로 튐
+   life    깨면 공을 하나 얻음 */
+const STONES = [
+  { key: 'sand', name: '사암', from: 4, hp: 1, pts: 20, max: 8, pierce: true, tip: '무른 돌이라 공이 뚫고 지나가요.' },
+  { key: 'granite', name: '화강암', from: 8, hp: 4, pts: 20, max: 4, tip: '단단해서 네 번 맞혀야 깨져요.' },
+  { key: 'obsid', name: '흑요석', from: 12, hp: 2, pts: 20, max: 4, dark: true, fast: 6, tip: '맞으면 공이 한동안 빨라져요.' },
+  { key: 'blast', name: '발파석', from: 16, hp: 1, pts: 20, max: 4, dark: true, blast: true, tip: '깨지면 터져서 둘레 벽돌도 부숴요.' },
+  { key: 'lode', name: '자철석', from: 20, hp: 2, pts: 20, max: 3, dark: true, pull: true, tip: '가까이 지나가는 공을 끌어당겨요.' },
+  { key: 'jade', name: '옥', from: 24, hp: 2, pts: 30, max: 2, wide: 12, tip: '깨면 패들이 한동안 길어져요.' },
+  { key: 'marble', name: '대리석', from: 28, hp: 2, pts: 20, max: 5, scatter: true, tip: '미끄러워서 공이 엉뚱한 쪽으로 튀어요.' },
+  { key: 'quartz', name: '수정', from: 32, hp: 3, pts: 50, max: 1, life: true, tip: '깨면 공을 하나 더 얻어요.' },
+  { key: 'amber', name: '호박', from: 36, hp: 2, pts: 20, max: 3, slow: 8, tip: '맞으면 공이 한동안 느려져요.' },
+  { key: 'gold', name: '금광석', from: 40, hp: 3, pts: 50, max: 2, dark: true, double: 12, tip: '깨면 한동안 점수가 두 배예요.' },
+  { key: 'meteor', name: '운석', from: 44, hp: 6, pts: 50, max: 2, dark: true, tip: '여섯 번 맞혀야 깨지고 점수가 커요.' },
+  { key: 'diamond', name: '금강석', from: 48, hp: 8, pts: 100, max: 1, tip: '여덟 번 맞혀야 깨지는 가장 단단한 돌이에요.' },
+];
+
+// 돌이 일으키는 일시 효과. good: 플레이어에게 유리한지 (표시 색)
+const FX = {
+  fast: { label: '공 빠름', good: false },
+  slow: { label: '공 느림', good: true },
+  wide: { label: '긴 패들', good: true },
+  double: { label: '점수 2배', good: true },
+};
+
 const ICONS = {
   soundOn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6"/><path d="M18.5 6.5a8 8 0 0 1 0 11"/></svg>',
   soundOff: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="m16 9.5 5 5"/><path d="m21 9.5-5 5"/></svg>',
@@ -440,6 +629,9 @@ const ui = {
   full: $('btn-full'),
   pause: $('btn-pause'),
   overlay: $('overlay'),
+  sign: $('sign'),
+  custom: $('sign-custom'),
+  links: $('sign-links'),
   eyebrow: $('sign-eyebrow'),
   title: $('sign-title'),
   text: $('sign-text'),
@@ -488,15 +680,21 @@ const game = {
   acc: 0,
   dry: 0, // 마지막으로 벽돌을 맞힌 뒤 패들에 맞은 횟수
   banner: null,
+  newStone: null, // 이번 레벨에 처음 나온 돌
+  lodes: [], // 이번 벽의 자철석들
+  shake: 0, // 폭발로 화면이 흔들리는 남은 시간(초)
+  submitted: false, // 이번 판 기록을 순위표에 올렸는지
   touchUI: matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0,
 };
 let H = 700;
 let bricks = [];
 let particles = [];
-const paddle = { x: W / 2, target: W / 2, y: H - PADDLE_GAP - PADDLE_H, w: 86, h: PADDLE_H, vx: 0, bubble: 0 };
+const paddle = { x: W / 2, target: W / 2, y: H - PADDLE_GAP - PADDLE_H, w: 86, baseW: 86, h: PADDLE_H, vx: 0, bubble: 0 };
 const ball = { x: W / 2, y: 0, vx: 0, vy: 0, r: BALL_R, speed: 290, stuck: true, trail: [] };
+const fx = { fast: 0, slow: 0, wide: 0, double: 0 }; // 효과별 남은 시간(초)
+const fxFull = { fast: 1, slow: 1, wide: 1, double: 1 }; // 효과가 시작될 때의 시간 (남은 시간 막대용)
 const keys = { left: false, right: false };
-const overlayActions = { primary: null, secondary: null };
+const overlayActions = { primary: null, secondary: null, back: null };
 let colors = {};
 let fonts = {};
 let lastKeyboard = false;
@@ -580,6 +778,12 @@ const sound = {
   launch() { this.tone(260, 0.09, 'triangle', 0.1, 520); },
   lose() { this.tone(240, 0.45, 'sawtooth', 0.05, 60); },
   clear() { [392, 523, 659, 784].forEach((f, i) => this.tone(f, 0.16, 'triangle', 0.1, 0, i * 0.09)); },
+  clink() { this.tone(980, 0.07, 'square', 0.035, 720); },
+  boom() { this.noise(0.4, 170, 0.75); this.tone(75, 0.3, 'sine', 0.3, 38); },
+  chime() { [880, 1320].forEach((f, i) => this.tone(f, 0.22, 'sine', 0.09, 0, i * 0.08)); },
+  zing() { this.tone(420, 0.14, 'sawtooth', 0.04, 1300); },
+  blub() { this.tone(520, 0.2, 'sine', 0.1, 190); },
+  key() { this.tone(660, 0.03, 'triangle', 0.05); },
 };
 
 function buzz(ms) {
@@ -620,6 +824,11 @@ function readPalette() {
     crackLight: v('--crack-light'),
     crackDark: v('--crack-dark'),
     flash: v('--flash'),
+    good: v('--good'),
+    bad: v('--bad'),
+    poleS: v('--pole-s'),
+    gold: v('--gold'),
+    stone: Object.fromEntries(STONES.map((s) => [s.key, v(`--st-${s.key}`)])),
   };
   fonts = { display: v('--font-display'), body: v('--font-body') };
   const meta = document.querySelector('meta[name="theme-color"]');
@@ -751,23 +960,66 @@ function buildLevel(n) {
         alive: true,
         flash: 0,
         tone: Math.floor(rand() * 5),
+        kind: null, // 돌이면 STONES의 항목
       };
       if (hp > 1) k.cracks = [makeCrack(rand, k), makeCrack(rand, k)];
       if (hp > 2) k.specks = Array.from({ length: 5 }, () => [k.x + 2 + rand() * (k.w - 4), k.y + 2 + rand() * (k.h - 4)]);
       bricks.push(k);
     });
   }
+  game.newStone = placeStones(n);
+  game.lodes = bricks.filter((k) => k.kind && k.kind.pull);
   game.remaining = bricks.length;
   game.wallName = plan.name;
-  if (tier > 0 && (n - 1) % 10 === 0) game.wallTip = '패들이 짧아지고 단단한 벽돌이 늘어요.';
+  if (game.newStone) game.wallTip = game.newStone.tip;
+  else if (tier > 0 && (n - 1) % 10 === 0) game.wallTip = '패들이 짧아지고 단단한 벽돌이 늘어요.';
   else game.wallTip = n > WALLS.length ? '공이 조금씩 빨라지고 있어요.' : plan.tip;
   game.wallBottom = WALL_TOP + courses * COURSE;
-  paddle.w = Math.max(54, 86 - tier * 8);
+  paddle.baseW = Math.max(54, 86 - tier * 8);
+  paddle.w = paddle.baseW;
   paddle.target = clamp(paddle.target, paddle.w / 2, W - paddle.w / 2);
   paddle.x = paddle.target;
 }
 
+// 벽돌 몇 장을 돌로 바꿈. 이번 레벨에 처음 나온 돌이 있으면 그 돌을 돌려줌.
+// 레벨 번호만으로 정해지므로 같은 레벨은 언제나 같은 벽이 됨 (이어하기 복원에 필요)
+function placeStones(n) {
+  const unlocked = STONES.filter((s) => s.from <= n);
+  if (!unlocked.length) return null;
+  const rand = mulberry32(n * 15485863 + 11);
+  const newest = unlocked[unlocked.length - 1];
+  const debut = newest.from === n ? newest : null;
+  // 새로 나온 돌은 세 레벨 동안 꼭 넣고, 나머지는 레벨마다 바꿔 가며 모두 2~3종
+  const picks = n - newest.from < 3 ? [newest] : [];
+  const pool = unlocked.filter((s) => !picks.includes(s));
+  const kinds = Math.min(unlocked.length, debut ? 2 : 3);
+  while (picks.length < kinds && pool.length) picks.push(pool.splice(Math.floor(rand() * pool.length), 1)[0]);
+  // 돌로 바꿀 자리: 일반 벽돌 가운데 고르되, 맞히기 힘든 벽 끝의 좁은 조각은 뺌
+  const spots = bricks.filter((k) => k.maxHp === 1 && !(k.w < 40 && (k.x < 3 || k.x + k.w > W - 6)));
+  let budget = Math.floor(bricks.length * 0.3);
+  for (const s of picks) {
+    let count = s === debut ? s.max : Math.max(1, Math.round(s.max * (0.5 + rand() * 0.5)));
+    count = Math.min(count, budget, spots.length);
+    budget -= count;
+    for (let i = 0; i < count; i++) {
+      // 아주 단단한 돌은 되도록 넓은 벽돌 자리에
+      const wideSpots = s.hp >= 4 ? spots.filter((k) => k.w >= 50) : [];
+      const from = wideSpots.length ? wideSpots : spots;
+      const k = from[Math.floor(rand() * from.length)];
+      spots.splice(spots.indexOf(k), 1);
+      k.kind = s;
+      k.hp = s.hp;
+      k.maxHp = s.hp;
+      k.specks = null;
+      k.cracks = Array.from({ length: Math.min(4, s.hp - 1) }, () => makeCrack(rand, k));
+      k.deco = Array.from({ length: 18 }, rand); // 무늬 위치 (돌마다 조금씩 다르게)
+    }
+  }
+  return debut;
+}
+
 function brickColor(k) {
+  if (k.kind) return colors.stone[k.kind.key];
   if (k.maxHp >= 3) return colors.firebrick;
   if (k.maxHp === 2) return colors.clinker;
   return colors.clay[k.tone % colors.clay.length];
@@ -791,7 +1043,30 @@ function resetBall() {
   ball.vy = 0;
   ball.trail.length = 0;
   game.dry = 0;
+  clearFx();
   placeOnPaddle();
+}
+
+/* ───────── 돌의 일시 효과 ───────── */
+const speedMul = () => (fx.fast > 0 ? 1.3 : 1) * (fx.slow > 0 ? 0.72 : 1);
+
+function startFx(name, seconds) {
+  const fresh = fx[name] <= 0;
+  fx[name] = seconds;
+  fxFull[name] = seconds;
+  if (fresh && (name === 'fast' || name === 'slow') && !ball.stuck) setVelocity(ball.vx, ball.vy);
+}
+
+function clearFx() {
+  for (const name of Object.keys(fx)) fx[name] = 0;
+}
+
+function tickFx(dt) {
+  for (const name of Object.keys(fx)) {
+    if (fx[name] <= 0) continue;
+    fx[name] = Math.max(0, fx[name] - dt);
+    if (fx[name] === 0 && (name === 'fast' || name === 'slow') && !ball.stuck) setVelocity(ball.vx, ball.vy);
+  }
 }
 
 function launch() {
@@ -799,8 +1074,7 @@ function launch() {
   const side = paddle.vx > 40 ? 1 : paddle.vx < -40 ? -1 : Math.random() < 0.5 ? -1 : 1;
   const angle = side * (0.2 + Math.random() * 0.35);
   ball.stuck = false;
-  ball.vx = Math.sin(angle) * ball.speed;
-  ball.vy = -Math.cos(angle) * ball.speed;
+  setVelocity(Math.sin(angle), -Math.cos(angle));
   game.mode = 'playing';
   game.acc = 0;
   sound.launch();
@@ -808,7 +1082,7 @@ function launch() {
 
 // 속도를 일정하게 유지하고, 너무 수평으로 흐르지 않게 막음
 function setVelocity(vx, vy) {
-  const s = ball.speed;
+  const s = ball.speed * speedMul();
   const len = Math.hypot(vx, vy) || 1;
   vx = (vx / len) * s;
   vy = (vy / len) * s;
@@ -840,9 +1114,32 @@ function stepBall(dt) {
     sound.wall();
   }
 
+  pullBall(dt);
   if (ball.vy > 0) hitPaddle();
   hitBricks();
-  if (game.mode === 'playing' && ball.y - ball.r > H) loseLife();
+  if (game.remaining <= 0) levelClear();
+  else if (game.mode === 'playing' && ball.y - ball.r > H) loseLife();
+}
+
+// 자철석: 가까이 지나가는 공의 방향을 돌 쪽으로 조금씩 꺾음 (속력은 그대로)
+function pullBall(dt) {
+  let ax = 0;
+  let ay = 0;
+  for (const k of game.lodes) {
+    if (!k.alive) continue;
+    const dx = k.x + k.w / 2 - ball.x;
+    const dy = k.y + k.h / 2 - ball.y;
+    const d = Math.hypot(dx, dy);
+    if (d > PULL_R || d < 1) continue;
+    const f = 1 - d / PULL_R; // 가까울수록 세게
+    ax += (dx / d) * f;
+    ay += (dy / d) * f;
+  }
+  if (!ax && !ay) return;
+  const a = ball.speed * speedMul() * 2.6 * dt;
+  let vy = ball.vy + ay * a;
+  if (vy * ball.vy <= 0) vy = ball.vy; // 위아래 방향까지 뒤집지는 않음 (공이 돌 둘레를 맴돌지 않게)
+  setVelocity(ball.vx + ax * a, vy);
 }
 
 function hitPaddle() {
@@ -883,6 +1180,11 @@ function hitBricks() {
     }
   }
   if (!hit) return;
+  if (hit.kind && hit.kind.pierce) {
+    // 무른 돌: 튕기지 않고 그대로 뚫고 지나감
+    damageBrick(hit);
+    return;
+  }
   if (hx === 0 && hy === 0) {
     // 공 중심이 벽돌 안에 들어간 경우: 덜 파고든 쪽 면에 맞은 것으로 처리
     const penX = ball.vx > 0 ? ball.x - hit.x : hit.x + hit.w - ball.x;
@@ -902,16 +1204,40 @@ function hitBricks() {
     ball.y = hy > 0 ? hit.y + hit.h + ball.r : hit.y - ball.r;
     bounced = true;
   }
-  if (bounced) damageBrick(hit);
+  if (!bounced) return;
+  if (hit.kind && hit.kind.scatter) {
+    // 미끄러운 돌: 튕겨 나오는 각도를 20~46도 틀어 버림. 벽돌에서 멀어지는 방향은 유지
+    const a = (Math.random() < 0.5 ? -1 : 1) * (0.35 + Math.random() * 0.45);
+    let vx = ball.vx * Math.cos(a) - ball.vy * Math.sin(a);
+    let vy = ball.vx * Math.sin(a) + ball.vy * Math.cos(a);
+    if (Math.abs(hx) > Math.abs(hy)) {
+      if (vx * hx <= 0) vx = -vx;
+    } else if (vy * hy <= 0) vy = -vy;
+    setVelocity(vx, vy);
+  }
+  damageBrick(hit);
 }
 
+// 벽돌(돌)에 피해 한 번. 벽을 다 허물었는지는 stepBall이 확인함
 function damageBrick(k) {
+  const s = k.kind;
   k.hp -= 1;
   game.dry = 0;
-  addScore(10);
+  addScore(s ? s.pts : 10);
+  if (s && s.fast) {
+    if (fx.fast <= 0) floater('빨라져요!', k, colors.bad);
+    startFx('fast', s.fast);
+    sound.zing();
+  }
+  if (s && s.slow) {
+    if (fx.slow <= 0) floater('느려져요', k, colors.good);
+    startFx('slow', s.slow);
+    sound.blub();
+  }
   if (k.hp > 0) {
     k.flash = 1;
-    sound.chip();
+    if (s) sound.clink();
+    else sound.chip();
     return;
   }
   k.alive = false;
@@ -919,8 +1245,51 @@ function damageBrick(k) {
   burst(k, brickColor(k));
   sound.crumble();
   ball.speed = Math.min(ball.speed + 2.5, baseSpeed() * 1.35);
-  setVelocity(ball.vx, ball.vy);
-  if (game.remaining <= 0) levelClear();
+  if (!ball.stuck) setVelocity(ball.vx, ball.vy);
+  if (!s) return;
+  if (s.wide) {
+    startFx('wide', s.wide);
+    floater('긴 패들', k, colors.good);
+    sound.chime();
+  }
+  if (s.double) {
+    startFx('double', s.double);
+    floater('점수 2배', k, colors.good);
+    sound.chime();
+  }
+  if (s.life) gainLife(k);
+  if (s.blast) explode(k);
+}
+
+// 발파석: 둘레(위아래 한 켜, 옆으로 한 장)에 있는 벽돌에 피해를 한 번씩. 옆의 발파석도 연달아 터짐
+function explode(k) {
+  const near = bricks.filter(
+    (b) => b.alive && b.x < k.x + k.w + 30 && b.x + b.w > k.x - 30 && b.y < k.y + k.h + COURSE && b.y + b.h > k.y - COURSE,
+  );
+  game.shake = 0.3;
+  sound.boom();
+  buzz(30);
+  if (!reduceMotion) {
+    particles.push({ ring: true, big: true, x: k.x + k.w / 2, y: k.y + k.h / 2, life: 0, max: 0.45, color: colors.safety });
+  }
+  for (const b of near) if (b.alive) damageBrick(b);
+}
+
+function gainLife(k) {
+  if (game.lives >= MAX_LIVES) {
+    addScore(300);
+    floater('+300', k, colors.good);
+    return;
+  }
+  game.lives += 1;
+  updateHud();
+  floater('공 +1', k, colors.good);
+  sound.chime();
+}
+
+// 벽돌 자리에서 떠오르는 짧은 글자
+function floater(text, k, color) {
+  particles.push({ text, x: clamp(k.x + k.w / 2, 40, W - 40), y: k.y + k.h / 2, life: 0, max: 1.1, color });
 }
 
 /* ───────── 파편 ───────── */
@@ -953,6 +1322,10 @@ function updateParticles(dt) {
   for (const p of particles) {
     p.life += dt;
     if (p.ring) continue;
+    if (p.text) {
+      p.y -= 26 * dt;
+      continue;
+    }
     p.rot += p.spin * dt;
     p.vy += 640 * dt;
     p.x += p.vx * dt;
@@ -963,7 +1336,7 @@ function updateParticles(dt) {
 
 /* ───────── 진행 ───────── */
 function addScore(n) {
-  game.score += n;
+  game.score += fx.double > 0 ? n * 2 : n;
   if (game.score > game.best) game.best = game.score;
   updateHud();
 }
@@ -975,14 +1348,16 @@ function saveBest() {
 function levelBanner(kicker = '') {
   const tier = tierOf(game.level);
   const tierUp = tier > 0 && (game.level - 1) % 10 === 0;
+  const stone = tierUp ? null : game.newStone;
   game.banner = {
     kicker,
-    badge: tierUp ? `난이도 ${tier + 1}단계` : '',
+    badge: tierUp ? `난이도 ${tier + 1}단계` : stone ? `새 돌 · ${stone.name}` : '',
+    stone, // 새 돌이 나온 레벨이면 딱지에 그 돌을 함께 그림
     title: `레벨 ${game.level}`,
     sub: tier > 0 && !tierUp ? `${game.wallName} · 난이도 ${tier + 1}단계` : game.wallName,
     tip: game.wallTip,
     t: 0,
-    dur: tierUp ? 3.4 : 2.6,
+    dur: tierUp || stone ? 3.6 : 2.6,
   };
 }
 
@@ -992,6 +1367,9 @@ function startGame() {
   game.lives = START_LIVES;
   game.level = 1;
   game.startBest = game.best;
+  game.submitted = false;
+  game.shake = 0;
+  ranks.mine = null;
   particles = [];
   buildLevel(1);
   paddle.x = paddle.target = W / 2;
@@ -1007,13 +1385,24 @@ function levelClear() {
   addScore(100);
   saveBest();
   game.level += 1;
+  // 10레벨을 깰 때마다 공 하나를 선물로 (이미 가득이면 점수로)
+  let kicker = '벽 철거 완료 · 보너스 +100';
+  if ((game.level - 1) % 10 === 0) {
+    if (game.lives < MAX_LIVES) {
+      game.lives += 1;
+      kicker = `${game.level - 1}레벨 돌파 선물 · 공 +1`;
+    } else {
+      addScore(500);
+      kicker = `${game.level - 1}레벨 돌파 선물 · 보너스 +500`;
+    }
+  }
   buildLevel(game.level);
   resetBall();
   game.mode = 'ready';
   game.armed = false;
   sound.clear();
   updateHud();
-  levelBanner('벽 철거 완료 · 보너스 +100');
+  levelBanner(kicker);
 }
 
 function loseLife() {
@@ -1034,18 +1423,39 @@ function loseLife() {
 function gameOver() {
   game.mode = 'over';
   game.banner = null;
+  game.submitted = false;
+  ranks.mine = null;
+  clearFx();
   saveBest();
+  showOver();
+  loadBoard(); // 순위표를 미리 받아 둠
+}
+
+// 게임 오버 안내판. 순위표나 이름 입력에서 돌아올 때도 씀
+function showOver(note = '') {
   const record = game.score > game.startBest && game.score > 0;
+  const canSubmit = boardOn() && game.score > 0 && !game.submitted;
   showOverlay({
     eyebrow: record ? '새 최고 기록' : `레벨 ${game.level} · ${game.wallName}`,
     title: '게임 오버',
+    text: note,
     spec: [
       ['점수', `${fmt(game.score)}점`],
-      ['최고 기록', `${fmt(game.best)}점`],
+      ['내 최고 기록', `${fmt(game.best)}점`],
       ['도달 레벨', `${game.level}`],
     ],
-    primary: ['다시 하기', startGame],
+    primary: canSubmit ? ['순위표에 기록 올리기', showNameEntry] : ['다시 하기', startGame],
+    secondary: canSubmit ? ['다시 하기', startGame] : null,
+    links: boardOn() ? [['순위표 보기', () => showBoard(() => showOver(note))]] : [],
   });
+}
+
+// 순위표 · 돌 도감으로 가는 작은 버튼들. back: 거기서 돌아올 화면
+function viewLinks(back) {
+  const links = [];
+  if (boardOn()) links.push(['순위표', () => showBoard(back)]);
+  links.push(['돌 도감', () => showCodex(back)]);
+  return links;
 }
 
 function pause() {
@@ -1054,6 +1464,10 @@ function pause() {
   game.mode = 'paused';
   game.armed = false;
   saveBest();
+  showPaused();
+}
+
+function showPaused() {
   showOverlay({
     eyebrow: `레벨 ${game.level} · ${game.wallName}`,
     title: '일시정지',
@@ -1063,6 +1477,7 @@ function pause() {
     ],
     primary: ['계속하기', resume],
     secondary: ['처음부터', startGame],
+    links: viewLinks(showPaused),
   });
 }
 
@@ -1079,15 +1494,19 @@ function showMenu() {
   const spec = [
     ['조작', game.touchUI ? '화면을 누른 채 좌우로 밀고, 손을 떼면 발사' : '마우스나 ← → 키로 이동, 클릭이나 스페이스로 발사'],
     ['단단한 벽돌', '클링커 2번, 내화벽돌 3번'],
-    ['난이도', '공은 계속 빨라지고, 10레벨마다 한 단계 올라요'],
+    ['레벨', '4레벨마다 새 돌이 나오고, 10레벨마다 난이도가 오르고 공을 하나 받아요'],
   ];
-  if (game.best > 0) spec.push(['최고 기록', `${fmt(game.best)}점`]);
+  if (game.best > 0) spec.push(['내 최고 기록', `${fmt(game.best)}점`]);
+  const top = ranks.rows[0];
+  if (boardOn() && top) spec.push(['전체 1위', `${fmt(top.score)}점 · ${top.name}`]);
   showOverlay({
+    view: 'menu',
     eyebrow: '작업 안내',
     title: '벽돌 철거반',
     text: '쇠공을 튕겨 벽을 모두 허물면 다음 벽이 나와요. 벽마다 실제 벽돌 쌓기 방식으로 지었어요.',
     spec,
     primary: ['시작하기', startGame],
+    links: viewLinks(showMenu),
   });
 }
 
@@ -1098,10 +1517,20 @@ function updateHud() {
   if (shownLives !== game.lives) {
     shownLives = game.lives;
     const dots = [];
-    for (let i = 0; i < Math.max(START_LIVES, game.lives); i++) {
+    if (game.lives > START_LIVES) {
+      // 공이 많으면 자리가 모자라서 '● ×5'처럼 숫자로
       const d = document.createElement('i');
-      d.className = i < game.lives ? 'life' : 'life lost';
-      dots.push(d);
+      const n = document.createElement('span');
+      d.className = 'life';
+      n.className = 'lives-count';
+      n.textContent = `×${game.lives}`;
+      dots.push(d, n);
+    } else {
+      for (let i = 0; i < START_LIVES; i++) {
+        const d = document.createElement('i');
+        d.className = i < game.lives ? 'life' : 'life lost';
+        dots.push(d);
+      }
     }
     ui.lives.replaceChildren(...dots);
     ui.lives.setAttribute('aria-label', `남은 공 ${game.lives}개`);
@@ -1113,7 +1542,28 @@ function updateSoundButton() {
   ui.sound.setAttribute('aria-label', sound.muted ? '소리 켜기' : '소리 끄기');
 }
 
-function showOverlay({ eyebrow = '', title, text = '', spec = [], primary, secondary = null }) {
+// view: 화면 이름 (비동기로 내용을 고칠 때 아직 그 화면인지 확인용)
+// custom: 안내판 가운데에 넣을 요소들, links: 아래쪽 작은 버튼, back: Esc로 돌아갈 곳, wide: 판을 화면 폭까지 넓힘
+function showOverlay({ view = '', eyebrow = '', title, text = '', spec = [], custom = [], primary, secondary = null, links = [], back = null, wide = false }) {
+  ui.overlay.dataset.view = view;
+  nameEntry.active = view === 'name';
+  ui.sign.classList.toggle('wide', wide);
+  ui.custom.replaceChildren(...custom);
+  ui.custom.hidden = custom.length === 0;
+  ui.links.replaceChildren(
+    ...links.map(([label, action]) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'link-btn';
+      b.textContent = label;
+      b.addEventListener('click', action);
+      return b;
+    }),
+  );
+  ui.links.hidden = links.length === 0;
+  overlayActions.back = back;
+  ui.primary.disabled = false;
+  ui.secondary.disabled = false;
   ui.eyebrow.textContent = eyebrow;
   ui.eyebrow.hidden = !eyebrow;
   ui.title.textContent = title;
@@ -1139,29 +1589,656 @@ function showOverlay({ eyebrow = '', title, text = '', spec = [], primary, secon
   keys.left = false;
   keys.right = false;
   needsRender = true;
-  if (lastKeyboard) ui.primary.focus({ preventScroll: true });
+  ui.overlay.scrollTop = 0;
+  if (lastKeyboard && view !== 'name') ui.primary.focus({ preventScroll: true });
 }
 
 function hideOverlay() {
+  nameEntry.active = false;
   ui.overlay.hidden = true;
   ui.pause.disabled = false;
   const active = document.activeElement;
   if (active && active !== document.body && typeof active.blur === 'function') active.blur();
 }
 
-/* ───────── 그리기 ───────── */
-function roundRect(x, y, w, h, r) {
-  r = Math.min(r, w / 2, h / 2);
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.arcTo(x + w, y, x + w, y + h, r);
-  ctx.arcTo(x + w, y + h, x, y + h, r);
-  ctx.arcTo(x, y + h, x, y, r);
-  ctx.arcTo(x, y, x + w, y, r);
-  ctx.closePath();
+/* ───────── 순위표: 점수를 서버(Firebase Firestore)에 저장하고 불러옴 ─────────
+   서버에는 기록마다 이름·점수·레벨만 저장함. 받는 형식은 firestore.rules가 검사함 */
+const ranks = {
+  rows: [], // 상위 기록 [{ id, name, score, level, at }]
+  at: 0, // 마지막으로 받아 온 시각
+  state: 'idle', // idle | loading | ok | error
+  busy: null, // 받아 오는 중인 요청
+  flushing: false,
+  mine: null, // 이번 판에 올린 내 기록 { id, name, score, level, rank }
+};
+const boardOn = () => BOARD.project !== '';
+
+function readJson(key, fallback) {
+  try {
+    const v = JSON.parse(store.get(key, 'null'));
+    return v === null ? fallback : v;
+  } catch (e) {
+    return fallback;
+  }
 }
 
-function drawWall() {
+async function boardCall(path, body) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 9000);
+  try {
+    const res = await fetch(`https://firestore.googleapis.com/v1/projects/${BOARD.project}/databases/(default)/documents${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: ctrl.signal,
+    });
+    if (!res.ok) {
+      const err = new Error(`HTTP ${res.status}`);
+      err.status = res.status;
+      throw err;
+    }
+    return await res.json();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// 서버가 받아 주지 않을 기록인지 (형식이 틀림). 이런 기록은 다시 보내도 소용없음
+const refused = (err) => err.status >= 400 && err.status < 500 && err.status !== 429;
+
+function rowOf(doc) {
+  const f = doc.fields || {};
+  return {
+    id: String(doc.name || '').split('/').pop(),
+    name: String((f.name && f.name.stringValue) || '').slice(0, NAME_MAX),
+    score: Number(f.score && f.score.integerValue) || 0,
+    level: Number(f.level && f.level.integerValue) || 1,
+    at: doc.createTime || '',
+  };
+}
+
+function loadBoard(force = false) {
+  if (!boardOn()) return Promise.resolve(false);
+  if (ranks.busy) return ranks.busy;
+  if (!force && ranks.state === 'ok' && Date.now() - ranks.at < 30000) return Promise.resolve(true);
+  ranks.state = 'loading';
+  ranks.busy = boardCall(':runQuery', {
+    structuredQuery: {
+      from: [{ collectionId: 'scores' }],
+      orderBy: [{ field: { fieldPath: 'score' }, direction: 'DESCENDING' }],
+      limit: BOARD.top,
+    },
+  })
+    .then((res) => {
+      // 점수가 같으면 먼저 올린 기록이 위
+      ranks.rows = (Array.isArray(res) ? res : [])
+        .filter((r) => r.document)
+        .map((r) => rowOf(r.document))
+        .sort((a, b) => b.score - a.score || (a.at < b.at ? -1 : 1));
+      ranks.at = Date.now();
+      ranks.state = 'ok';
+      store.set(KEY_BOARD, JSON.stringify(ranks.rows));
+      needsRender = true;
+      return true;
+    })
+    .catch(() => {
+      ranks.state = 'error';
+      return false;
+    })
+    .finally(() => {
+      ranks.busy = null;
+    });
+  ranks.busy.then((ok) => {
+    if (ok) flushPending();
+  });
+  return ranks.busy;
+}
+
+function postScore(entry) {
+  return boardCall('/scores', {
+    fields: {
+      name: { stringValue: entry.name },
+      score: { integerValue: String(entry.score) },
+      level: { integerValue: String(entry.level) },
+    },
+  }).then(rowOf);
+}
+
+// 내 점수보다 높은 기록의 수 + 1
+function fetchRank(score) {
+  return boardCall(':runAggregationQuery', {
+    structuredAggregationQuery: {
+      structuredQuery: {
+        from: [{ collectionId: 'scores' }],
+        where: { fieldFilter: { field: { fieldPath: 'score' }, op: 'GREATER_THAN', value: { integerValue: String(score) } } },
+      },
+      aggregations: [{ alias: 'n', count: {} }],
+    },
+  }).then((res) => Number(res[0].result.aggregateFields.n.integerValue) + 1);
+}
+
+// 인터넷이 안 될 때 올리지 못한 기록은 보관해 두었다가 다음에 연결되면 올림
+function queuePending(entry) {
+  const list = readJson(KEY_PENDING, []);
+  store.set(KEY_PENDING, JSON.stringify([...(Array.isArray(list) ? list : []), entry].slice(-5)));
+}
+
+async function flushPending() {
+  const saved = readJson(KEY_PENDING, []);
+  const list = Array.isArray(saved) ? saved : [];
+  if (ranks.flushing || !list.length) return;
+  ranks.flushing = true;
+  let sent = 0;
+  try {
+    while (list.length) {
+      const e = list[0] || {};
+      const entry = { name: cleanName(e.name || ''), score: e.score | 0, level: e.level | 0 };
+      try {
+        if (nameOk(entry.name) && entry.score > 0) {
+          await postScore(entry);
+          sent += 1;
+        }
+      } catch (err) {
+        if (!refused(err)) break; // 아직 연결이 안 됨: 다음에 다시
+      }
+      list.shift();
+      store.set(KEY_PENDING, JSON.stringify(list));
+    }
+  } finally {
+    ranks.flushing = false;
+  }
+  if (sent) {
+    ranks.at = 0;
+    loadBoard(true);
+  }
+}
+
+function note(text) {
+  const p = document.createElement('p');
+  p.className = 'note';
+  p.textContent = text;
+  return p;
+}
+
+function boardRow(rank, r, mine) {
+  const li = document.createElement('li');
+  li.className = mine ? 'board-row mine' : 'board-row';
+  const cells = [
+    ['rank', String(rank)],
+    ['who', r.name],
+    ['lv', `레벨 ${r.level}`],
+    ['pts', `${fmt(r.score)}점`],
+  ];
+  for (const [cls, text] of cells) {
+    const span = document.createElement('span');
+    span.className = cls;
+    span.textContent = text; // 이름은 남이 적은 글자라 반드시 글자로만 넣음
+    li.append(span);
+  }
+  return li;
+}
+
+function boardNodes() {
+  if (!ranks.rows.length) {
+    if (ranks.state === 'loading' || ranks.state === 'idle') return [note('순위를 불러오는 중이에요…')];
+    if (ranks.state === 'error') return [note('순위를 불러오지 못했어요. 인터넷 연결을 확인해 주세요.')];
+    return [note('아직 기록이 없어요. 첫 기록을 남겨 보세요.')];
+  }
+  const list = document.createElement('ol');
+  list.className = 'board-list';
+  const mine = ranks.mine;
+  let found = false;
+  ranks.rows.forEach((r, i) => {
+    const isMine = !!mine && r.id === mine.id;
+    found = found || isMine;
+    list.append(boardRow(i + 1, r, isMine));
+  });
+  if (mine && !found) {
+    const gap = document.createElement('li');
+    gap.className = 'board-row gap';
+    gap.textContent = '⋮';
+    list.append(gap, boardRow(mine.rank || '–', mine, true));
+  }
+  const out = [list];
+  if (ranks.state === 'error') out.push(note('인터넷에 연결되지 않아 마지막으로 받은 순위를 보여 드려요.'));
+  return out;
+}
+
+// again: 기록을 막 올린 뒤라 '다시 하기'를 큰 버튼으로
+function showBoard(back, again = false) {
+  const paint = () => {
+    if (ui.overlay.dataset.view !== 'board' || ui.overlay.hidden) return;
+    ui.custom.replaceChildren(...boardNodes());
+    const mine = ui.custom.querySelector('.mine');
+    if (mine) mine.scrollIntoView({ block: 'nearest' });
+  };
+  showOverlay({
+    view: 'board',
+    eyebrow: `상위 ${BOARD.top}개 기록`,
+    title: '순위표',
+    custom: boardNodes(),
+    primary: again ? ['다시 하기', startGame] : ['돌아가기', back],
+    secondary: again ? ['닫기', back] : null,
+    back,
+  });
+  paint();
+  loadBoard(!again).then(paint);
+}
+
+/* ───────── 돌 도감 ───────── */
+const SAMPLE_DECO = Array.from({ length: 18 }, mulberry32(20261112));
+
+function showCodex(back) {
+  const list = document.createElement('ul');
+  list.className = 'codex';
+  for (const s of STONES) {
+    const li = document.createElement('li');
+    const cv = document.createElement('canvas');
+    cv.width = 168;
+    cv.height = 51;
+    const c = cv.getContext('2d');
+    c.scale(3, 3);
+    drawStoneFace(c, s, 0, 0, 56, 17, SAMPLE_DECO, 0.4);
+    const head = document.createElement('div');
+    const name = document.createElement('b');
+    const from = document.createElement('small');
+    const tip = document.createElement('span');
+    name.textContent = s.name;
+    from.textContent = `레벨 ${s.from}부터`;
+    tip.textContent = s.tip;
+    head.append(name, from);
+    li.append(cv, head, tip);
+    list.append(li);
+  }
+  showOverlay({
+    view: 'codex',
+    eyebrow: '4레벨마다 하나씩 나와요',
+    title: '돌 도감',
+    custom: [list],
+    primary: ['돌아가기', back],
+    back,
+  });
+}
+
+/* ───────── 이름 입력: 순위표에 올릴 영문 이름 ─────────
+   휴대폰 자판은 한글로 뜨는 경우가 많아서, 게임 안에 영문 자판을 따로 둠.
+   PC에서는 키보드로도 칠 수 있음 (한/영 상태와 상관없이 영문으로 들어감) */
+const nameEntry = { active: false, text: '', shift: true, busy: false, field: null, status: null, keys: [] };
+const KEY_ROWS = ['qwertyuiop', 'asdfghjkl', ['shift', ...'zxcvbnm', 'back'], ['-', "'", ' ', '.']];
+const KEY_LABELS = { shift: '⇧', back: '⌫', ' ': '띄어쓰기' };
+const KEY_NAMES = { shift: '대문자', back: '지우기', ' ': '띄어쓰기', '-': '붙임표', "'": '작은따옴표', '.': '마침표' };
+
+const cleanName = (s) =>
+  String(s)
+    .replace(/[^A-Za-z .'-]/g, '')
+    .replace(/\s+/g, ' ')
+    .replace(/^[^A-Za-z]+/, '')
+    .slice(0, NAME_MAX)
+    .trim();
+const nameOk = (s) => /^[A-Za-z][A-Za-z .'-]{1,23}$/.test(s) && s.replace(/[^A-Za-z]/g, '').length >= 2;
+
+function buildNamePad() {
+  const field = document.createElement('div');
+  field.className = 'name-field';
+  field.setAttribute('role', 'textbox');
+  field.setAttribute('aria-label', '영문 이름');
+  const status = note('');
+  status.setAttribute('aria-live', 'polite');
+  const pad = document.createElement('div');
+  pad.className = 'keys';
+  nameEntry.keys = [];
+  KEY_ROWS.forEach((row, i) => {
+    const line = document.createElement('div');
+    line.className = i === 1 ? 'key-row inset' : 'key-row';
+    for (const k of row) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = k === ' ' ? 'key space' : k.length > 1 || !/[a-z]/.test(k) ? 'key fn' : 'key';
+      b.dataset.k = k;
+      b.textContent = KEY_LABELS[k] || k;
+      if (KEY_NAMES[k]) b.setAttribute('aria-label', KEY_NAMES[k]);
+      line.append(b);
+      nameEntry.keys.push(b);
+    }
+    pad.append(line);
+  });
+  // 누르는 순간 바로 입력 (손을 뗄 때까지 기다리지 않음). 키보드로 누른 경우는 click으로 받음
+  pad.addEventListener('pointerdown', (e) => {
+    const b = e.target instanceof Element ? e.target.closest('.key') : null;
+    if (!b || (e.pointerType === 'mouse' && e.button !== 0)) return;
+    e.preventDefault();
+    typeName(b.dataset.k);
+  });
+  pad.addEventListener('click', (e) => {
+    const b = e.target instanceof Element ? e.target.closest('.key') : null;
+    if (b && e.detail === 0) typeName(b.dataset.k);
+  });
+  nameEntry.field = field;
+  nameEntry.status = status;
+  return [field, status, pad];
+}
+
+// upper: PC 키보드에서 Shift를 누른 채 친 글자
+function typeName(k, upper = false) {
+  if (!nameEntry.active || nameEntry.busy) return;
+  let t = nameEntry.text;
+  const last = t.slice(-1);
+  if (k === 'shift') {
+    nameEntry.shift = !nameEntry.shift;
+    paintName();
+    return;
+  }
+  if (k === 'back') t = t.slice(0, -1);
+  else if (t.length >= NAME_MAX) return;
+  else if (/^[a-z]$/i.test(k)) t += nameEntry.shift || upper ? k.toUpperCase() : k.toLowerCase();
+  else if (k === ' ') t += t && last !== ' ' ? ' ' : '';
+  else if (/[A-Za-z]/.test(last)) t += k; // 붙임표 · 따옴표 · 마침표는 글자 바로 뒤에만
+  nameEntry.text = t;
+  nameEntry.shift = t === '' || /[ -]$/.test(t); // 낱말 첫 글자는 저절로 대문자
+  nameEntry.status.textContent = '';
+  sound.key();
+  paintName();
+}
+
+function paintName() {
+  const { field, text, shift, busy } = nameEntry;
+  const caret = document.createElement('i');
+  caret.className = 'caret';
+  if (text) {
+    field.replaceChildren(text, caret);
+  } else {
+    const hint = document.createElement('span');
+    hint.className = 'hint';
+    hint.textContent = '예: Gildong Hong';
+    field.replaceChildren(caret, hint);
+  }
+  for (const b of nameEntry.keys) {
+    const k = b.dataset.k;
+    if (k.length === 1 && /[a-z]/.test(k)) b.textContent = shift ? k.toUpperCase() : k;
+    if (k === 'shift') b.classList.toggle('on', shift);
+    b.disabled = busy;
+  }
+  ui.primary.disabled = busy || !nameOk(cleanName(text));
+  ui.secondary.disabled = busy;
+}
+
+function showNameEntry() {
+  nameEntry.busy = false;
+  nameEntry.text = cleanName(store.get(KEY_NAME, ''));
+  nameEntry.shift = nameEntry.text === '';
+  const cancel = () => showOver();
+  showOverlay({
+    view: 'name',
+    eyebrow: `${fmt(game.score)}점 · 레벨 ${game.level}`,
+    title: '이름 입력',
+    text: '영문으로 적어 주세요. 순위표에 그대로 보여요.',
+    custom: buildNamePad(),
+    primary: ['순위표에 올리기', submitName],
+    secondary: ['취소', cancel],
+    back: cancel,
+    wide: true,
+  });
+  paintName();
+}
+
+async function submitName() {
+  const name = cleanName(nameEntry.text);
+  if (!nameEntry.active || nameEntry.busy || !nameOk(name) || game.submitted) return;
+  const entry = { name, score: game.score, level: game.level };
+  nameEntry.busy = true;
+  nameEntry.status.textContent = '기록을 올리는 중이에요…';
+  paintName();
+  store.set(KEY_NAME, name);
+  try {
+    const row = await postScore(entry);
+    game.submitted = true;
+    ranks.mine = { ...entry, id: row.id, rank: 0 };
+    const [, rank] = await Promise.all([loadBoard(true), fetchRank(entry.score).catch(() => 0)]);
+    ranks.mine.rank = rank;
+    if (ui.overlay.dataset.view === 'name' && game.mode === 'over') showBoard(() => showOver(), true);
+  } catch (err) {
+    if (ui.overlay.dataset.view !== 'name' || game.mode !== 'over') return;
+    if (refused(err)) {
+      nameEntry.busy = false;
+      nameEntry.status.textContent = '서버가 이 기록을 받아 주지 않았어요. 이름을 확인하고 다시 해 보세요.';
+      paintName();
+      return;
+    }
+    game.submitted = true;
+    queuePending(entry);
+    showOver('인터넷에 연결되지 않아 기록을 보관해 뒀어요. 다음에 연결되면 자동으로 올릴게요.');
+  }
+}
+
+/* ───────── 그리기 ───────── */
+function roundRect(x, y, w, h, r, c = ctx) {
+  r = Math.min(r, w / 2, h / 2);
+  c.beginPath();
+  c.moveTo(x + r, y);
+  c.arcTo(x + w, y, x + w, y + h, r);
+  c.arcTo(x + w, y + h, x, y + h, r);
+  c.arcTo(x, y + h, x, y, r);
+  c.arcTo(x, y, x + w, y, r);
+  c.closePath();
+}
+
+// 벽돌 면의 음영: 위는 밝게, 아래는 어둡게
+function makeSheen(c, y, h) {
+  const g = c.createLinearGradient(0, y, 0, y + h);
+  g.addColorStop(0, colors.brickLight);
+  g.addColorStop(0.5, 'rgba(255, 255, 255, 0)');
+  g.addColorStop(0.5, 'rgba(0, 0, 0, 0)');
+  g.addColorStop(1, colors.brickShade);
+  return g;
+}
+
+// 반짝임 (수정 · 금 · 금강석)
+function twinkle(c, x, y, phase, t) {
+  const a = reduceMotion ? 0.7 : Math.max(0, Math.sin(t * 2.6 + phase * 6.283));
+  if (a <= 0.02) return;
+  c.globalAlpha = a;
+  c.fillStyle = '#ffffff';
+  c.fillRect(x - 2.6, y - 0.45, 5.2, 0.9);
+  c.fillRect(x - 0.45, y - 2.6, 0.9, 5.2);
+  c.globalAlpha = 1;
+}
+
+// 돌마다 다른 무늬. d: 0~1 난수 18개(무늬 위치), t: 시각(초)
+function drawStoneDeco(c, key, x, y, w, h, d, t) {
+  c.save();
+  roundRect(x, y, w, h, 1.8, c);
+  c.clip();
+  switch (key) {
+    case 'sand': // 가로로 쌓인 결
+      c.fillStyle = 'rgba(120, 78, 30, 0.24)';
+      for (let i = 0; i < 3; i++) c.fillRect(x, y + h * (0.24 + i * 0.26) + (d[i] - 0.5) * 1.6, w, 1);
+      c.fillStyle = 'rgba(255, 255, 255, 0.3)';
+      for (let i = 0; i < 4; i++) c.fillRect(x + d[4 + i] * (w - 2), y + d[8 + i] * (h - 1), 1.4, 1);
+      break;
+    case 'granite': // 굵은 알갱이
+      for (let i = 0; i < 9; i++) {
+        c.fillStyle = ['rgba(255, 255, 255, 0.55)', 'rgba(40, 36, 40, 0.5)', 'rgba(200, 120, 120, 0.55)'][i % 3];
+        c.fillRect(x + 1 + d[i] * (w - 3.6), y + 1 + d[i + 9] * (h - 3.6), 1.7, 1.7);
+      }
+      break;
+    case 'obsid': { // 유리 같은 광택
+      const sx = x + w * (0.1 + d[0] * 0.25);
+      c.fillStyle = 'rgba(255, 255, 255, 0.24)';
+      c.beginPath();
+      c.moveTo(sx, y + h);
+      c.lineTo(sx + h * 0.9, y);
+      c.lineTo(sx + h * 0.9 + w * 0.13, y);
+      c.lineTo(sx + w * 0.13, y + h);
+      c.closePath();
+      c.fill();
+      c.fillStyle = 'rgba(170, 140, 255, 0.3)';
+      c.fillRect(x, y + h - 3, w, 3);
+      break;
+    }
+    case 'blast': { // 위험 띠와 깜빡이는 불씨
+      const top = y + h * 0.3;
+      const bh = h * 0.42;
+      c.fillStyle = colors.safety;
+      c.fillRect(x, top, w, bh);
+      c.fillStyle = colors.cap;
+      for (let sx = x - bh; sx < x + w + bh; sx += 9) {
+        c.beginPath();
+        c.moveTo(sx, top + bh);
+        c.lineTo(sx + 4.5, top + bh);
+        c.lineTo(sx + 4.5 + bh, top);
+        c.lineTo(sx + bh, top);
+        c.closePath();
+        c.fill();
+      }
+      c.fillStyle = colors.bad;
+      c.globalAlpha = reduceMotion ? 1 : 0.55 + 0.45 * Math.sin(t * 7 + d[0] * 6);
+      c.beginPath();
+      c.arc(x + w / 2, y + h * 0.16, 1.5, 0, Math.PI * 2);
+      c.fill();
+      c.globalAlpha = 1;
+      break;
+    }
+    case 'lode': // 막대자석: 빨간 극과 파란 극
+      c.fillStyle = colors.bad;
+      c.fillRect(x, y, w * 0.3, h);
+      c.fillStyle = colors.poleS;
+      c.fillRect(x + w * 0.7, y, w * 0.3, h);
+      break;
+    case 'jade': // 물결 무늬
+      c.lineWidth = 1.6;
+      c.strokeStyle = 'rgba(255, 255, 255, 0.32)';
+      c.beginPath();
+      c.moveTo(x - 2, y + h * (0.3 + d[0] * 0.4));
+      c.bezierCurveTo(x + w * 0.3, y - h * 0.3, x + w * 0.6, y + h * 1.3, x + w + 2, y + h * (0.3 + d[1] * 0.4));
+      c.stroke();
+      c.lineWidth = 1;
+      c.strokeStyle = 'rgba(8, 60, 40, 0.35)';
+      c.beginPath();
+      c.moveTo(x - 2, y + h * (0.55 + d[2] * 0.3));
+      c.bezierCurveTo(x + w * 0.35, y + h * 0.1, x + w * 0.7, y + h * 1.4, x + w + 2, y + h * (0.5 + d[3] * 0.3));
+      c.stroke();
+      break;
+    case 'marble': // 회색 결
+      c.strokeStyle = 'rgba(88, 94, 108, 0.55)';
+      c.lineWidth = 0.9;
+      for (let i = 0; i < 2; i++) {
+        let px = x + w * (0.12 + d[i] * 0.3 + i * 0.42);
+        c.beginPath();
+        c.moveTo(px, y);
+        for (let j = 1; j <= 3; j++) {
+          px += (d[2 + i * 3 + j] - 0.35) * 9;
+          c.lineTo(px, y + (h * j) / 3);
+        }
+        c.stroke();
+      }
+      break;
+    case 'quartz': { // 뾰족한 결정
+      const n = Math.max(2, Math.round(w / 13));
+      c.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+      c.lineWidth = 0.9;
+      c.beginPath();
+      c.moveTo(x, y + h);
+      for (let i = 1; i <= n; i++) {
+        const px = x + (w * i) / n;
+        c.lineTo(px - w / n / 2, y + 2.5);
+        c.lineTo(px, y + h);
+      }
+      c.stroke();
+      twinkle(c, x + w * (0.2 + d[0] * 0.6), y + h * 0.42, d[1], t);
+      break;
+    }
+    case 'amber': { // 속이 비치는 빛과 갇힌 알갱이
+      const g = c.createRadialGradient(x + w * 0.3, y + h * 0.3, 0, x + w * 0.3, y + h * 0.3, w * 0.6);
+      g.addColorStop(0, 'rgba(255, 244, 180, 0.65)');
+      g.addColorStop(1, 'rgba(255, 244, 180, 0)');
+      c.fillStyle = g;
+      c.fillRect(x, y, w, h);
+      c.fillStyle = 'rgba(92, 40, 0, 0.6)';
+      c.beginPath();
+      c.ellipse(x + w * (0.45 + d[0] * 0.35), y + h * 0.56, 2.4, 1.4, d[1] * 3, 0, Math.PI * 2);
+      c.fill();
+      break;
+    }
+    case 'gold': // 박혀 있는 금 알갱이
+      c.fillStyle = colors.gold;
+      for (let i = 0; i < 7; i++) {
+        const s = i < 2 ? 2.7 : 1.4;
+        c.fillRect(x + 1.5 + d[i] * (w - 4.5), y + 1.5 + d[i + 7] * (h - 4.5), s, s);
+      }
+      twinkle(c, x + 2.8 + d[0] * (w - 4.5), y + 2.8 + d[7] * (h - 4.5), d[14], t);
+      break;
+    case 'meteor': // 움푹 팬 구덩이
+      for (let i = 0; i < 3; i++) {
+        const cx = x + w * (0.18 + i * 0.32 + (d[i] - 0.5) * 0.12);
+        const cy = y + h * (0.32 + d[i + 3] * 0.36);
+        const r = 1.8 + d[i + 6] * 1.5;
+        c.fillStyle = 'rgba(0, 0, 0, 0.42)';
+        c.beginPath();
+        c.arc(cx, cy, r, 0, Math.PI * 2);
+        c.fill();
+        c.strokeStyle = 'rgba(255, 200, 160, 0.45)';
+        c.lineWidth = 0.8;
+        c.beginPath();
+        c.arc(cx, cy, r, Math.PI * 0.1, Math.PI * 0.9);
+        c.stroke();
+      }
+      break;
+    case 'diamond': { // 깎은 면
+      const n = Math.max(2, Math.round(w / 12));
+      c.fillStyle = 'rgba(60, 140, 220, 0.2)';
+      c.fillRect(x, y + h * 0.5, w, h * 0.5);
+      c.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+      c.lineWidth = 0.8;
+      c.beginPath();
+      for (let i = 0; i < n; i++) {
+        const a = x + (w * i) / n;
+        const b = x + (w * (i + 1)) / n;
+        c.moveTo(a, y);
+        c.lineTo(b, y + h);
+        c.moveTo(b, y);
+        c.lineTo(a, y + h);
+      }
+      c.stroke();
+      twinkle(c, x + w * (0.2 + d[0] * 0.6), y + h * 0.35, d[1], t);
+      break;
+    }
+    default:
+      break;
+  }
+  c.restore();
+}
+
+// 돌 한 장 (벽 · 레벨 안내 딱지 · 돌 도감에서 함께 씀)
+function drawStoneFace(c, s, x, y, w, h, d, t, sheen = null) {
+  roundRect(x, y, w, h, 1.8, c);
+  c.fillStyle = colors.stone[s.key];
+  c.fill();
+  drawStoneDeco(c, s.key, x, y, w, h, d, t);
+  roundRect(x, y, w, h, 1.8, c);
+  c.fillStyle = sheen || makeSheen(c, y, h);
+  c.fill();
+  c.fillStyle = colors.brickLight;
+  c.fillRect(x + 1.5, y + 0.7, w - 3, 1);
+}
+
+// 자철석이 끌어당기는 범위: 돌 쪽으로 좁혀 드는 고리로 보여 줌
+function drawPull(t) {
+  ctx.strokeStyle = colors.poleS;
+  ctx.lineWidth = 1.2;
+  for (const k of game.lodes) {
+    if (!k.alive) continue;
+    for (let i = 0; i < 3; i++) {
+      const f = reduceMotion ? (i + 1) / 3 : 1 - ((t * 0.45 + i / 3) % 1);
+      ctx.globalAlpha = 0.34 * f;
+      ctx.beginPath();
+      ctx.arc(k.x + k.w / 2, k.y + k.h / 2, 12 + (PULL_R - 12) * f, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawWall(t) {
   // 줄눈: 남아 있는 벽돌 둘레에만 칠해서, 깨진 자리는 구멍으로 보이게
   const m = JOINT / 2 + 0.4;
   // 벽 아래로 떨어지는 옅은 그림자: 벽이 바탕에서 살짝 떠 보이게
@@ -1173,36 +2250,39 @@ function drawWall() {
   for (const k of bricks) {
     if (k.alive) ctx.fillRect(k.x - m, k.y - m, k.w + m * 2, k.h + m * 2);
   }
-  // 벽돌 면의 음영(위는 밝게, 아래는 어둡게)은 같은 켜끼리 한 번만 만들어 함께 씀
+  // 벽돌 면의 음영은 같은 켜끼리 한 번만 만들어 함께 씀
   const sheens = new Map();
   for (const k of bricks) {
     if (!k.alive) continue;
     let sheen = sheens.get(k.y);
     if (!sheen) {
-      sheen = ctx.createLinearGradient(0, k.y, 0, k.y + k.h);
-      sheen.addColorStop(0, colors.brickLight);
-      sheen.addColorStop(0.5, 'rgba(255, 255, 255, 0)');
-      sheen.addColorStop(0.5, 'rgba(0, 0, 0, 0)');
-      sheen.addColorStop(1, colors.brickShade);
+      sheen = makeSheen(ctx, k.y, k.h);
       sheens.set(k.y, sheen);
     }
-    roundRect(k.x, k.y, k.w, k.h, 1.8);
-    ctx.fillStyle = brickColor(k);
-    ctx.fill();
-    ctx.fillStyle = sheen;
-    ctx.fill();
-    ctx.fillStyle = colors.brickLight;
-    ctx.fillRect(k.x + 1.5, k.y + 0.7, k.w - 3, 1);
+    if (k.kind) {
+      drawStoneFace(ctx, k.kind, k.x, k.y, k.w, k.h, k.deco, t, sheen);
+    } else {
+      roundRect(k.x, k.y, k.w, k.h, 1.8);
+      ctx.fillStyle = brickColor(k);
+      ctx.fill();
+      ctx.fillStyle = sheen;
+      ctx.fill();
+      ctx.fillStyle = colors.brickLight;
+      ctx.fillRect(k.x + 1.5, k.y + 0.7, k.w - 3, 1);
+    }
     if (k.specks) {
       ctx.fillStyle = colors.speck;
       for (const [sx, sy] of k.specks) ctx.fillRect(sx, sy, 1.5, 1.5);
     }
     const damage = k.maxHp - k.hp;
     if (damage > 0 && k.cracks) {
-      ctx.strokeStyle = k.maxHp === 2 ? colors.crackLight : colors.crackDark;
+      // 돌은 깨질 때까지 금이 고르게 늘어남 (여덟 번 맞는 돌도 금은 네 줄까지)
+      const shown = k.kind ? Math.ceil((damage * k.cracks.length) / (k.maxHp - 1)) : damage;
+      const light = k.kind ? k.kind.dark : k.maxHp === 2;
+      ctx.strokeStyle = light ? colors.crackLight : colors.crackDark;
       ctx.lineWidth = 1.2;
       ctx.lineJoin = 'round';
-      for (let i = 0; i < damage && i < k.cracks.length; i++) {
+      for (let i = 0; i < shown && i < k.cracks.length; i++) {
         const c = k.cracks[i];
         ctx.beginPath();
         ctx.moveTo(c[0][0], c[0][1]);
@@ -1226,10 +2306,23 @@ function drawParticles() {
       // 벽돌이 깨진 자리에서 퍼지는 충격 고리
       ctx.globalAlpha = (1 - f) * 0.5;
       ctx.strokeStyle = p.color;
-      ctx.lineWidth = 2.2 * (1 - f) + 0.4;
+      ctx.lineWidth = (p.big ? 5 : 2.2) * (1 - f) + 0.4;
       ctx.beginPath();
-      ctx.arc(p.x, p.y, 5 + f * 22, 0, Math.PI * 2);
+      ctx.arc(p.x, p.y, 5 + f * (p.big ? 50 : 22), 0, Math.PI * 2);
       ctx.stroke();
+      continue;
+    }
+    if (p.text) {
+      ctx.globalAlpha = Math.min(1, (1 - f) * 2.5);
+      ctx.font = `700 14px ${fonts.body}`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.lineWidth = 3;
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = colors.field;
+      ctx.strokeText(p.text, p.x, p.y);
+      ctx.fillStyle = p.color;
+      ctx.fillText(p.text, p.x, p.y);
       continue;
     }
     ctx.globalAlpha = 1 - f * f;
@@ -1347,14 +2440,20 @@ function drawBanner() {
     ctx.fillText(b.kicker, W / 2, y - (b.badge ? 74 : 40));
   }
   if (b.badge) {
-    // 난이도가 오르는 레벨: 안전 노랑 딱지로 알림
+    // 난이도가 오르거나 새 돌이 나오는 레벨: 안전 노랑 딱지로 알림 (새 돌이면 그 돌도 함께)
     ctx.font = `700 14px ${fonts.body}`;
-    const bw = ctx.measureText(b.badge).width + 24;
+    const sw = b.stone ? 36 : 0;
+    const bw = ctx.measureText(b.badge).width + 24 + sw;
     ctx.fillStyle = colors.safety;
     roundRect(W / 2 - bw / 2, y - 56, bw, 26, 13);
     ctx.fill();
+    if (b.stone) {
+      ctx.fillStyle = colors.mortar;
+      ctx.fillRect(W / 2 - bw / 2 + 9, y - 50, 32, 14);
+      drawStoneFace(ctx, b.stone, W / 2 - bw / 2 + 10.5, y - 48.5, 29, 11, SAMPLE_DECO, performance.now() / 1000);
+    }
     ctx.fillStyle = colors.safetyInk;
-    ctx.fillText(b.badge, W / 2, y - 42.5);
+    ctx.fillText(b.badge, W / 2 + sw / 2, y - 42.5);
   }
   ctx.fillStyle = colors.ink;
   ctx.font = `400 38px ${fonts.display}`;
@@ -1383,17 +2482,67 @@ function drawHint() {
   ctx.restore();
 }
 
+// 순위표 1위 기록: 경기장 맨 위에 작게
+function drawTopScore() {
+  const top = ranks.rows[0];
+  if (!top) return;
+  ctx.save();
+  ctx.globalAlpha = 0.8;
+  ctx.fillStyle = colors.muted;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = `600 12px ${fonts.body}`;
+  ctx.fillText(`1위 ${fmt(top.score)}점 · ${top.name}`, W / 2, 22, W - 24);
+  ctx.restore();
+}
+
+// 켜져 있는 효과: 패들 아래에 이름과 남은 시간 막대
+function drawFx() {
+  const active = Object.keys(fx).filter((name) => fx[name] > 0);
+  if (!active.length) return;
+  ctx.save();
+  ctx.font = `700 11px ${fonts.body}`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const widths = active.map((name) => ctx.measureText(FX[name].label).width + 18);
+  let x = W / 2 - (widths.reduce((a, b) => a + b, 0) + (active.length - 1) * 6) / 2;
+  const y = H - 36;
+  active.forEach((name, i) => {
+    const w = widths[i];
+    // 끝나기 2초 전부터 깜빡임
+    ctx.globalAlpha = fx[name] < 2 && !reduceMotion && Math.floor(fx[name] * 6) % 2 === 0 ? 0.45 : 0.92;
+    ctx.fillStyle = colors.ink;
+    roundRect(x, y, w, 19, 6);
+    ctx.fill();
+    ctx.fillStyle = colors.field;
+    ctx.fillText(FX[name].label, x + w / 2, y + 8.5);
+    ctx.fillStyle = FX[name].good ? colors.good : colors.bad;
+    ctx.fillRect(x + 5, y + 15.2, (w - 10) * clamp(fx[name] / fxFull[name], 0, 1), 2);
+    x += w + 6;
+  });
+  ctx.restore();
+}
+
 function render() {
   if (!canvas.width || !canvas.height) return;
+  const t = performance.now() / 1000;
   ctx.setTransform(canvas.width / W, 0, 0, canvas.height / H, 0, 0);
   const bg = ctx.createLinearGradient(0, 0, 0, H);
   bg.addColorStop(0, colors.field);
   bg.addColorStop(1, colors.field2);
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, W, H);
-  drawWall();
+  if (game.shake > 0 && !reduceMotion) {
+    // 폭발: 화면을 잠깐 흔듦
+    const amp = 5 * (game.shake / 0.3);
+    ctx.translate((Math.random() - 0.5) * amp, (Math.random() - 0.5) * amp);
+  }
+  drawTopScore();
+  drawPull(t);
+  drawWall(t);
   drawParticles();
   drawHazard();
+  drawFx();
   drawPaddle();
   if (game.mode !== 'over') drawBall();
   if (game.banner) drawBanner();
@@ -1406,6 +2555,10 @@ function update(dt) {
   if (game.mode === 'ready' || game.mode === 'playing') {
     if (keys.left) paddle.target -= KEY_SPEED * dt;
     if (keys.right) paddle.target += KEY_SPEED * dt;
+    // 패들 길이: 옥을 깨면 한동안 길어졌다가 부드럽게 돌아옴
+    const wantW = paddle.baseW * (fx.wide > 0 ? 1.45 : 1);
+    paddle.w += (wantW - paddle.w) * Math.min(1, dt * 10);
+    if (Math.abs(wantW - paddle.w) < 0.3) paddle.w = wantW;
     paddle.target = clamp(paddle.target, paddle.w / 2, W - paddle.w / 2);
     const prev = paddle.x;
     paddle.x = paddle.target;
@@ -1415,7 +2568,9 @@ function update(dt) {
     paddle.bubble += (bubbleTarget - paddle.bubble) * Math.min(1, dt * 8);
   }
   if (game.mode === 'ready') placeOnPaddle();
+  if (game.shake > 0) game.shake = Math.max(0, game.shake - dt);
   if (game.mode === 'playing') {
+    tickFx(dt);
     game.acc += dt;
     while (game.acc >= STEP && game.mode === 'playing') {
       stepBall(STEP);
@@ -1486,9 +2641,32 @@ app.addEventListener('pointerup', (e) => endPointer(e, false));
 app.addEventListener('pointercancel', (e) => endPointer(e, true));
 app.addEventListener('contextmenu', (e) => e.preventDefault());
 
+// 이름 입력 중의 키보드: 글자 위치(e.code)로 읽어서 한글 자판 상태여도 영문으로 들어감
+function nameKey(e) {
+  if (e.ctrlKey || e.metaKey || e.altKey || e.code === 'Tab') return;
+  const onButton = document.activeElement instanceof HTMLButtonElement;
+  const punct = { Minus: '-', Quote: "'", Period: '.', NumpadSubtract: '-', NumpadDecimal: '.' };
+  if (/^Key[A-Z]$/.test(e.code)) typeName(e.code.slice(3).toLowerCase(), e.shiftKey);
+  else if (e.code === 'Space' && !onButton) typeName(' ');
+  else if (e.code === 'Backspace') typeName('back');
+  else if (punct[e.code] && !e.shiftKey) typeName(punct[e.code]);
+  else if ((e.code === 'Enter' || e.code === 'NumpadEnter') && !onButton) submitName();
+  else if (e.code === 'Escape' && overlayActions.back && !nameEntry.busy) overlayActions.back();
+  else return;
+  e.preventDefault();
+}
+
 window.addEventListener('keydown', (e) => {
   lastKeyboard = true;
   sound.unlock();
+  if (nameEntry.active) {
+    nameKey(e);
+    return;
+  }
+  if (e.code === 'Escape' && overlayActions.back && !ui.overlay.hidden) {
+    overlayActions.back();
+    return;
+  }
   if (e.code === 'ArrowLeft' || e.code === 'KeyA') {
     keys.left = true;
     e.preventDefault();
@@ -1587,7 +2765,7 @@ window.addEventListener('pagehide', saveBest);
 /* ───────── 페이지를 새로 고치지 않고 갱신될 때 진행 상황 이어가기 ───────── */
 function snapshot() {
   return {
-    v: 1,
+    v: 2,
     mode: game.mode === 'paused' ? game.resumeMode : game.mode,
     score: game.score,
     level: game.level,
@@ -1598,7 +2776,7 @@ function snapshot() {
 }
 
 function restore(saved) {
-  if (!saved || saved.v !== 1) return false;
+  if (!saved || saved.v !== 2) return false;
   if (saved.mode !== 'ready' && saved.mode !== 'playing') return false;
   game.score = saved.score | 0;
   game.level = Math.max(1, saved.level | 0);
@@ -1631,6 +2809,12 @@ function start(saved) {
   layout();
   resetBall();
   updateHud();
+  // 순위표: 지난번에 받아 둔 것을 먼저 보여 주고, 새로 받아 오면 시작 화면의 1위도 고침
+  const cached = readJson(KEY_BOARD, []);
+  if (boardOn() && Array.isArray(cached)) ranks.rows = cached.filter((r) => r && typeof r.name === 'string' && r.score > 0);
+  loadBoard().then((ok) => {
+    if (ok && ui.overlay.dataset.view === 'menu' && game.mode === 'menu' && !ui.overlay.hidden) showMenu();
+  });
   if (!restore(saved)) showMenu();
   if ('ResizeObserver' in window) new ResizeObserver(() => layout()).observe(stage);
   else window.addEventListener('resize', layout);
