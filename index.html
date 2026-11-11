@@ -746,6 +746,8 @@ const game = {
   wallBottom: WALL_TOP,
   armed: false,
   acc: 0,
+  combo: 0, // 공이 패들에 닿기 전까지 연달아 깬 벽돌 수
+  comboPop: 0, // 콤보 숫자가 커질 때 잠깐 튀는 효과의 남은 시간
   dry: 0, // 마지막으로 벽돌을 맞힌 뒤 패들에 맞은 횟수
   banner: null,
   newStone: null, // 이번 레벨에 처음 나온 돌
@@ -1117,6 +1119,7 @@ function resetBall() {
   ball.vy = 0;
   ball.trail.length = 0;
   game.dry = 0;
+  game.combo = 0;
   clearFx();
   placeOnPaddle();
 }
@@ -1224,6 +1227,7 @@ function hitPaddle() {
   if (ball.y > paddle.y + paddle.h * 0.5) return; // 이미 패들 아래로 지나감
   // 패들 가운데에 맞으면 위로, 끝에 맞을수록 옆으로 비스듬히.
   // 벽돌을 못 깨고 왕복만 반복하면 각도를 조금씩 더 흔들어 같은 길만 도는 걸 막음
+  endCombo();
   game.dry += 1;
   const t = clamp((ball.x - paddle.x) / (paddle.w / 2), -1, 1);
   const jitter = (Math.random() - 0.5) * (0.06 + Math.min(0.4, game.dry * 0.03));
@@ -1316,6 +1320,8 @@ function damageBrick(k) {
   }
   k.alive = false;
   game.remaining -= 1;
+  game.combo += 1;
+  game.comboPop = 0.18;
   burst(k, brickColor(k));
   sound.crumble();
   ball.speed = Math.min(ball.speed + 2.5, baseSpeed() * 1.35);
@@ -1455,6 +1461,43 @@ function startGame() {
   levelBanner();
 }
 
+/* ───────── 콤보 ─────────
+   공이 패들에 다시 닿기 전까지 연달아 깬 벽돌 수를 셈. 두 개째부터 콤보로 표시하고,
+   다섯 개 이상이면 콤보가 끝날 때(패들에 닿거나, 벽을 다 깨거나, 공을 놓칠 때) 개수 × 50점을 보너스로 줌 */
+const COMBO_MIN = 5;
+
+function endCombo() {
+  const n = game.combo;
+  game.combo = 0;
+  if (n < COMBO_MIN || game.demo) return;
+  addScore(n * 50);
+  particles.push({ text: `콤보 ${n} · 보너스 +${fmt(n * 50)}`, x: W / 2, y: Math.max(game.wallBottom + 70, H * 0.46), life: 0, max: 1.6, color: colors.safety, big: true });
+  sound.chime();
+}
+
+function drawCombo() {
+  const n = game.combo;
+  if (n < 2) return;
+  const bonus = n >= COMBO_MIN;
+  const y = Math.max(game.wallBottom + 44, H * 0.4);
+  const pop = reduceMotion ? 1 : 1 + (game.comboPop / 0.18) * 0.25;
+  ctx.save();
+  ctx.translate(W / 2, y);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.globalAlpha = 0.9;
+  ctx.fillStyle = bonus ? colors.safety : colors.muted;
+  ctx.save();
+  ctx.scale(pop, pop);
+  ctx.font = `400 ${bonus ? 34 : 26}px ${fonts.display}`;
+  ctx.fillText(`콤보 ${n}`, 0, 0);
+  ctx.restore();
+  ctx.font = `600 13px ${fonts.body}`;
+  ctx.fillStyle = colors.muted;
+  ctx.fillText(bonus ? `보너스 +${fmt(n * 50)}` : `${COMBO_MIN}개부터 보너스`, 0, bonus ? 28 : 23);
+  ctx.restore();
+}
+
 /* ───────── 데모: 시작 화면에서 가만히 두면 게임이 혼자 돌아가고, 순위표가 전광판처럼 흐름 ───────── */
 const DEMO_WAIT = 8000; // 시작 화면에서 이만큼(ms) 아무 입력이 없으면 데모 시작
 let lastInput = performance.now();
@@ -1506,6 +1549,7 @@ function levelClear() {
     demoWall();
     return;
   }
+  endCombo();
   addScore(100);
   saveBest();
   game.level += 1;
@@ -1537,6 +1581,7 @@ function loseLife() {
     game.demoWait = 0;
     return;
   }
+  endCombo();
   game.lives -= 1;
   sound.lose();
   buzz(80);
@@ -1640,6 +1685,7 @@ function showMenu() {
   const spec = [
     ['조작', game.touchUI ? '화면을 누른 채 좌우로 밀고, 손을 떼면 발사' : '마우스나 ← → 키로 이동, 클릭이나 스페이스로 발사'],
     ['단단한 벽돌', '클링커 2번, 내화벽돌 3번'],
+    ['콤보', '공이 패들에 닿기 전에 5개 이상 연달아 깨면 개수 × 50점'],
     ['레벨', '4레벨마다 새 돌이 나오고, 10레벨마다 난이도가 오르고 공을 하나 받아요'],
   ];
   if (game.best > 0) spec.push(['내 최고 기록', `${fmt(game.best)}점`]);
@@ -2460,7 +2506,7 @@ function drawParticles() {
     }
     if (p.text) {
       ctx.globalAlpha = Math.min(1, (1 - f) * 2.5);
-      ctx.font = `700 14px ${fonts.body}`;
+      ctx.font = `700 ${p.big ? 19 : 14}px ${fonts.body}`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.lineWidth = 3;
@@ -2760,6 +2806,7 @@ function render() {
   drawPaddle();
   if (game.demo) drawDemoBoard();
   if (game.mode !== 'over') drawBall();
+  if (!game.demo) drawCombo();
   if (game.demo) drawDemoHint();
   else if (game.banner) drawBanner();
   else if (game.mode === 'ready') drawHint();
@@ -2786,6 +2833,7 @@ function update(dt) {
   }
   if (game.mode === 'ready') placeOnPaddle();
   if (game.shake > 0) game.shake = Math.max(0, game.shake - dt);
+  if (game.comboPop > 0) game.comboPop = Math.max(0, game.comboPop - dt);
   if (game.mode === 'playing') {
     tickFx(dt);
     game.acc += dt;
