@@ -43,6 +43,11 @@
     --crack-dark: rgba(58, 30, 12, 0.65);
     --flash: #ffffff;
     --scrim: rgba(214, 215, 209, 0.84);
+    --field-2: #dfe4e5;
+    --steel-deep: #0c0e11;
+    --safety-deep: #d49f00;
+    --wall-shadow: rgba(20, 24, 30, 0.16);
+    --board-shadow: 0 12px 32px rgba(20, 24, 30, 0.16);
     --font-display: "Black Han Sans", "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
     --font-body: "IBM Plex Sans KR", "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
     color-scheme: light;
@@ -69,6 +74,11 @@
       --clinker: #6c585d;
       --firebrick: #dcc58f;
       --scrim: rgba(14, 15, 17, 0.84);
+    --field-2: #101318;
+    --steel-deep: #7f8791;
+    --safety-deep: #e0a800;
+    --wall-shadow: rgba(0, 0, 0, 0.4);
+    --board-shadow: 0 14px 36px rgba(0, 0, 0, 0.5);
       color-scheme: dark;
     }
   }
@@ -93,6 +103,11 @@
     --clinker: #6c585d;
     --firebrick: #dcc58f;
     --scrim: rgba(14, 15, 17, 0.84);
+    --field-2: #101318;
+    --steel-deep: #7f8791;
+    --safety-deep: #e0a800;
+    --wall-shadow: rgba(0, 0, 0, 0.4);
+    --board-shadow: 0 14px 36px rgba(0, 0, 0, 0.5);
     color-scheme: dark;
   }
 
@@ -155,8 +170,7 @@
     width: 12px;
     height: 12px;
     border-radius: 50%;
-    background: var(--steel);
-    box-shadow: inset -2px -2px 0 var(--brick-shade);
+    background: radial-gradient(circle at 35% 32%, var(--shine), var(--steel) 45%, var(--steel-deep));
   }
   .life.lost { background: transparent; box-shadow: inset 0 0 0 1.5px var(--line); }
   .actions { margin-left: auto; display: flex; gap: 6px; }
@@ -167,7 +181,7 @@
     place-items: center;
     padding: 0;
     border: 1.5px solid var(--line);
-    border-radius: 8px;
+    border-radius: 11px;
     background: transparent;
     color: var(--ink);
     cursor: pointer;
@@ -186,12 +200,18 @@
     display: grid;
     place-items: center;
   }
-  .board { position: relative; width: 320px; height: 560px; }
+  .board {
+    position: relative;
+    width: 320px;
+    height: 560px;
+    border-radius: 14px;
+    box-shadow: 0 0 0 1px var(--line), var(--board-shadow);
+  }
   #game {
     display: block;
     width: 100%;
     height: 100%;
-    border-radius: 12px;
+    border-radius: 14px;
     background: var(--field);
   }
 
@@ -201,10 +221,10 @@
     inset: 0;
     display: flex;
     padding: 16px;
-    border-radius: 12px;
+    border-radius: 14px;
     background: var(--scrim);
-    -webkit-backdrop-filter: blur(4px);
-    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
     overflow-y: auto;
     overscroll-behavior: contain;
     touch-action: pan-y;
@@ -214,8 +234,9 @@
     width: 100%;
     max-width: 320px;
     background: var(--field);
-    border: 2px solid var(--ink);
-    border-radius: 4px;
+    border: 1.5px solid var(--ink);
+    border-radius: 12px;
+    box-shadow: var(--board-shadow);
     overflow: hidden;
   }
   .sign-band {
@@ -257,13 +278,18 @@
   .btn {
     min-height: 52px;
     padding: 0 18px;
-    border-radius: 4px;
+    border-radius: 10px;
     font: inherit;
     font-size: 17px;
     font-weight: 700;
     cursor: pointer;
   }
-  .btn-primary { background: var(--safety); color: var(--safety-ink); border: 2px solid var(--cap); }
+  .btn-primary {
+    background: linear-gradient(var(--safety), var(--safety-deep));
+    color: var(--safety-ink);
+    border: 1.5px solid var(--cap);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  }
   .btn-primary:active { transform: translateY(1px); }
   .btn-secondary { background: transparent; color: var(--ink); border: 2px solid var(--line); }
 
@@ -571,9 +597,14 @@ function readPalette() {
   colors = {
     page: v('--page'),
     field: v('--field'),
+    field2: v('--field-2'),
     ink: v('--ink'),
     muted: v('--muted'),
     safety: v('--safety'),
+    safetyDeep: v('--safety-deep'),
+    safetyInk: v('--safety-ink'),
+    steelDeep: v('--steel-deep'),
+    wallShadow: v('--wall-shadow'),
     cap: v('--cap'),
     vial: v('--vial'),
     bubble: v('--bubble'),
@@ -683,18 +714,33 @@ function makeCrack(rand, k) {
   return pts;
 }
 
+/* ───────── 난이도 ─────────
+   10레벨마다 한 단계씩 오름: 패들이 짧아지고, 단단한 벽돌이 늘고, 벽이 높아짐.
+   공 속도는 단계와 상관없이 레벨마다 조금씩 계속 빨라짐 (speedFactor). */
+const tierOf = (level) => Math.floor((level - 1) / 10);
+
+function speedFactor(level) {
+  const n = level - 1;
+  // 초반엔 빨리, 뒤로 갈수록 천천히 오르되 멈추지는 않음. 상한은 공이 벽돌을 뚫지 않는 한계
+  return Math.min(2.8, 1 + (1 - Math.exp(-n / 14)) + 0.005 * n);
+}
+
 function buildLevel(n) {
   const plan = WALLS[(n - 1) % WALLS.length];
-  const loop = Math.floor((n - 1) / WALLS.length);
+  const tier = tierOf(n);
+  const courses = plan.courses + Math.min(2, Math.floor(tier / 2));
+  const toughChance = Math.min(0.5, tier * 0.1);
   const rand = mulberry32(n * 7919 + 17);
+  const toughRand = mulberry32(n * 104729 + 3);
   bricks = [];
-  for (let r = 0; r < plan.courses; r++) {
+  for (let r = 0; r < courses; r++) {
     const { pattern, offset } = plan.course(r);
     let pieces = layCourse(pattern, offset);
     const op = plan.opening;
     if (op && r >= op.top && r <= op.bottom) pieces = cutOpening(pieces, op.from, op.to);
     pieces.forEach((p, i) => {
-      const hp = plan.hp(p, r, i);
+      let hp = plan.hp(p, r, i);
+      if (toughRand() < toughChance) hp = Math.min(3, hp + 1);
       const k = {
         x: p.a * MM,
         y: WALL_TOP + r * COURSE,
@@ -713,9 +759,10 @@ function buildLevel(n) {
   }
   game.remaining = bricks.length;
   game.wallName = plan.name;
-  game.wallTip = loop > 0 ? `${loop + 1}바퀴째라 공이 더 빨라요.` : plan.tip;
-  game.wallBottom = WALL_TOP + plan.courses * COURSE;
-  paddle.w = Math.max(66, 86 - loop * 8);
+  if (tier > 0 && (n - 1) % 10 === 0) game.wallTip = '패들이 짧아지고 단단한 벽돌이 늘어요.';
+  else game.wallTip = n > WALLS.length ? '공이 조금씩 빨라지고 있어요.' : plan.tip;
+  game.wallBottom = WALL_TOP + courses * COURSE;
+  paddle.w = Math.max(54, 86 - tier * 8);
   paddle.target = clamp(paddle.target, paddle.w / 2, W - paddle.w / 2);
   paddle.x = paddle.target;
 }
@@ -729,7 +776,7 @@ function brickColor(k) {
 /* ───────── 공 ───────── */
 // 공 속도는 경기장 높이에 비례: 키 큰 화면에서도 패들↔벽 왕복 시간이 비슷하게
 function baseSpeed() {
-  return H * 0.44 * Math.min(1 + (game.level - 1) * 0.07, 1.6);
+  return H * 0.44 * speedFactor(game.level);
 }
 
 function placeOnPaddle() {
@@ -890,8 +937,13 @@ function burst(k, color) {
       life: 0,
       max: 0.45 + Math.random() * 0.35,
       size: 2 + Math.random() * 3.5,
+      rot: Math.random() * Math.PI,
+      spin: (Math.random() - 0.5) * 14,
       color: i % 3 === 0 ? colors.mortar : color,
     });
+  }
+  if (!reduceMotion) {
+    particles.push({ ring: true, x: k.x + k.w / 2, y: k.y + k.h / 2, life: 0, max: 0.32, color });
   }
   if (particles.length > 300) particles.splice(0, particles.length - 300);
 }
@@ -900,6 +952,8 @@ function updateParticles(dt) {
   if (!particles.length) return;
   for (const p of particles) {
     p.life += dt;
+    if (p.ring) continue;
+    p.rot += p.spin * dt;
     p.vy += 640 * dt;
     p.x += p.vx * dt;
     p.y += p.vy * dt;
@@ -919,7 +973,17 @@ function saveBest() {
 }
 
 function levelBanner(kicker = '') {
-  game.banner = { kicker, title: `레벨 ${game.level}`, sub: game.wallName, tip: game.wallTip, t: 0, dur: 2.6 };
+  const tier = tierOf(game.level);
+  const tierUp = tier > 0 && (game.level - 1) % 10 === 0;
+  game.banner = {
+    kicker,
+    badge: tierUp ? `난이도 ${tier + 1}단계` : '',
+    title: `레벨 ${game.level}`,
+    sub: tier > 0 && !tierUp ? `${game.wallName} · 난이도 ${tier + 1}단계` : game.wallName,
+    tip: game.wallTip,
+    t: 0,
+    dur: tierUp ? 3.4 : 2.6,
+  };
 }
 
 function startGame() {
@@ -1015,6 +1079,7 @@ function showMenu() {
   const spec = [
     ['조작', game.touchUI ? '화면을 누른 채 좌우로 밀고, 손을 떼면 발사' : '마우스나 ← → 키로 이동, 클릭이나 스페이스로 발사'],
     ['단단한 벽돌', '클링커 2번, 내화벽돌 3번'],
+    ['난이도', '공은 계속 빨라지고, 10레벨마다 한 단계 올라요'],
   ];
   if (game.best > 0) spec.push(['최고 기록', `${fmt(game.best)}점`]);
   showOverlay({
@@ -1099,18 +1164,35 @@ function roundRect(x, y, w, h, r) {
 function drawWall() {
   // 줄눈: 남아 있는 벽돌 둘레에만 칠해서, 깨진 자리는 구멍으로 보이게
   const m = JOINT / 2 + 0.4;
+  // 벽 아래로 떨어지는 옅은 그림자: 벽이 바탕에서 살짝 떠 보이게
+  ctx.fillStyle = colors.wallShadow;
+  for (const k of bricks) {
+    if (k.alive) ctx.fillRect(k.x - m, k.y - m + 4, k.w + m * 2, k.h + m * 2);
+  }
   ctx.fillStyle = colors.mortar;
   for (const k of bricks) {
     if (k.alive) ctx.fillRect(k.x - m, k.y - m, k.w + m * 2, k.h + m * 2);
   }
+  // 벽돌 면의 음영(위는 밝게, 아래는 어둡게)은 같은 켜끼리 한 번만 만들어 함께 씀
+  const sheens = new Map();
   for (const k of bricks) {
     if (!k.alive) continue;
+    let sheen = sheens.get(k.y);
+    if (!sheen) {
+      sheen = ctx.createLinearGradient(0, k.y, 0, k.y + k.h);
+      sheen.addColorStop(0, colors.brickLight);
+      sheen.addColorStop(0.5, 'rgba(255, 255, 255, 0)');
+      sheen.addColorStop(0.5, 'rgba(0, 0, 0, 0)');
+      sheen.addColorStop(1, colors.brickShade);
+      sheens.set(k.y, sheen);
+    }
+    roundRect(k.x, k.y, k.w, k.h, 1.8);
     ctx.fillStyle = brickColor(k);
-    ctx.fillRect(k.x, k.y, k.w, k.h);
+    ctx.fill();
+    ctx.fillStyle = sheen;
+    ctx.fill();
     ctx.fillStyle = colors.brickLight;
-    ctx.fillRect(k.x, k.y, k.w, 1.4);
-    ctx.fillStyle = colors.brickShade;
-    ctx.fillRect(k.x, k.y + k.h - 1.8, k.w, 1.8);
+    ctx.fillRect(k.x + 1.5, k.y + 0.7, k.w - 3, 1);
     if (k.specks) {
       ctx.fillStyle = colors.speck;
       for (const [sx, sy] of k.specks) ctx.fillRect(sx, sy, 1.5, 1.5);
@@ -1139,9 +1221,24 @@ function drawWall() {
 
 function drawParticles() {
   for (const p of particles) {
-    ctx.globalAlpha = clamp(1 - p.life / p.max, 0, 1);
+    const f = clamp(p.life / p.max, 0, 1);
+    if (p.ring) {
+      // 벽돌이 깨진 자리에서 퍼지는 충격 고리
+      ctx.globalAlpha = (1 - f) * 0.5;
+      ctx.strokeStyle = p.color;
+      ctx.lineWidth = 2.2 * (1 - f) + 0.4;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 5 + f * 22, 0, Math.PI * 2);
+      ctx.stroke();
+      continue;
+    }
+    ctx.globalAlpha = 1 - f * f;
     ctx.fillStyle = p.color;
-    ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.rot);
+    ctx.fillRect(-p.size / 2, -p.size * 0.35, p.size, p.size * 0.7);
+    ctx.restore();
   }
   ctx.globalAlpha = 1;
 }
@@ -1173,14 +1270,24 @@ function drawPaddle() {
   // 수평계 모양 패들: 움직이면 가운데 기포가 출렁임
   const { w, h, y } = paddle;
   const x = paddle.x - w / 2;
-  ctx.fillStyle = colors.safety;
-  roundRect(x, y, w, h, 3);
+  ctx.fillStyle = colors.wallShadow;
+  roundRect(x + 1, y + 4, w - 2, h, 4);
+  ctx.fill();
+  const body = ctx.createLinearGradient(0, y, 0, y + h);
+  body.addColorStop(0, colors.safety);
+  body.addColorStop(1, colors.safetyDeep);
+  ctx.fillStyle = body;
+  roundRect(x, y, w, h, 4);
   ctx.fill();
   ctx.fillStyle = colors.cap;
-  roundRect(x, y, 8, h, 3);
+  roundRect(x, y, 8, h, 4);
   ctx.fill();
-  roundRect(x + w - 8, y, 8, h, 3);
+  roundRect(x + w - 8, y, 8, h, 4);
   ctx.fill();
+  ctx.fillStyle = colors.shine;
+  ctx.globalAlpha = 0.5;
+  ctx.fillRect(x + 10, y + 1.2, w - 20, 1.2);
+  ctx.globalAlpha = 1;
   const vw = 26;
   const vh = 7;
   const vx = paddle.x - vw / 2;
@@ -1207,21 +1314,22 @@ function drawBall() {
     const n = ball.trail.length;
     ball.trail.forEach((p, i) => {
       const f = (i + 1) / (n + 1);
-      ctx.globalAlpha = f * 0.22;
+      ctx.globalAlpha = f * f * 0.2;
       ctx.fillStyle = colors.steel;
       ctx.beginPath();
-      ctx.arc(p.x, p.y, ball.r * (0.45 + 0.5 * f), 0, Math.PI * 2);
+      ctx.arc(p.x, p.y, ball.r * (0.3 + 0.65 * f), 0, Math.PI * 2);
       ctx.fill();
     });
     ctx.globalAlpha = 1;
   }
-  ctx.fillStyle = colors.steel;
+  // 쇠공: 왼쪽 위에서 빛을 받는 구슬처럼
+  const g = ctx.createRadialGradient(ball.x - 2.4, ball.y - 2.6, 0.4, ball.x, ball.y, ball.r);
+  g.addColorStop(0, colors.shine);
+  g.addColorStop(0.4, colors.steel);
+  g.addColorStop(1, colors.steelDeep);
+  ctx.fillStyle = g;
   ctx.beginPath();
   ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = colors.shine;
-  ctx.beginPath();
-  ctx.arc(ball.x - 2.3, ball.y - 2.4, 2.1, 0, Math.PI * 2);
   ctx.fill();
 }
 
@@ -1236,7 +1344,17 @@ function drawBanner() {
   if (b.kicker) {
     ctx.fillStyle = colors.muted;
     ctx.font = `700 14px ${fonts.body}`;
-    ctx.fillText(b.kicker, W / 2, y - 40);
+    ctx.fillText(b.kicker, W / 2, y - (b.badge ? 74 : 40));
+  }
+  if (b.badge) {
+    // 난이도가 오르는 레벨: 안전 노랑 딱지로 알림
+    ctx.font = `700 14px ${fonts.body}`;
+    const bw = ctx.measureText(b.badge).width + 24;
+    ctx.fillStyle = colors.safety;
+    roundRect(W / 2 - bw / 2, y - 56, bw, 26, 13);
+    ctx.fill();
+    ctx.fillStyle = colors.safetyInk;
+    ctx.fillText(b.badge, W / 2, y - 42.5);
   }
   ctx.fillStyle = colors.ink;
   ctx.font = `400 38px ${fonts.display}`;
@@ -1268,7 +1386,10 @@ function drawHint() {
 function render() {
   if (!canvas.width || !canvas.height) return;
   ctx.setTransform(canvas.width / W, 0, 0, canvas.height / H, 0, 0);
-  ctx.fillStyle = colors.field;
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, colors.field);
+  bg.addColorStop(1, colors.field2);
+  ctx.fillStyle = bg;
   ctx.fillRect(0, 0, W, H);
   drawWall();
   drawParticles();
@@ -1302,7 +1423,7 @@ function update(dt) {
     }
     if (game.mode === 'playing') {
       ball.trail.push({ x: ball.x, y: ball.y });
-      if (ball.trail.length > 6) ball.trail.shift();
+      if (ball.trail.length > 10) ball.trail.shift();
     }
   }
   updateParticles(dt);
