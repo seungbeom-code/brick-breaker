@@ -1,11 +1,11 @@
 <!doctype html>
-<html lang="ko">
+<html lang="ko" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>벽돌 철거반</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<meta name="theme-color" content="#d6d7d1">
+<meta name="theme-color" content="#0e0f11">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -499,6 +499,7 @@
 <script>
 'use strict';
 document.documentElement.lang = 'ko';
+document.documentElement.dataset.theme = 'dark'; // 기기 설정과 상관없이 항상 어두운 화면
 
 /* ───────── 경기장 규격 (논리 좌표: 실제 화면 크기와 무관) ───────── */
 const W = 400;                          // 경기장 너비
@@ -2641,43 +2642,56 @@ function drawTopScore() {
   ctx.restore();
 }
 
-// 데모 중의 순위표 전광판: 주식 시세판처럼 오른쪽에서 왼쪽으로 흐름
-function drawTicker() {
-  const y = 8;
-  const h = 28;
-  const white = colors.bubble;
+// 데모 중의 순위표: 경기장 가운데에 5위까지 계속 보여 줌
+function drawDemoBoard() {
+  const rows = ranks.rows.slice(0, 5);
+  const w = 312;
+  const rowH = 30;
+  const h = 50 + Math.max(1, rows.length) * rowH + 10;
+  const x = (W - w) / 2;
+  // 벽 아래와 '데모 화면' 글자 사이 가운데에 (화면이 낮으면 벽과 조금 겹칠 수 있음)
+  const y = Math.max(46, (Math.min(game.wallBottom, paddle.y - 130 - h) + paddle.y - 120 - h) / 2);
   const dim = 'rgba(255, 255, 255, 0.55)';
-  const parts = [['순위표', colors.safety], ['  ◆  ', dim]];
-  if (ranks.rows.length) {
-    ranks.rows.forEach((r, i) => {
-      parts.push([`${i + 1}위 `, colors.safety], [`${r.name} `, white], [`▲ ${fmt(r.score)}점 `, colors.good], [`레벨 ${r.level}`, dim], ['  ◆  ', dim]);
-    });
-  } else {
-    parts.push([boardOn() ? '아직 기록이 없어요. 첫 기록을 남겨 보세요' : '순위표 준비 중이에요', white], ['  ◆  ', dim]);
-  }
   ctx.save();
+  ctx.globalAlpha = 0.88;
   ctx.fillStyle = colors.cap;
-  roundRect(8, y, W - 16, h, 7);
+  roundRect(x, y, w, h, 12);
   ctx.fill();
-  ctx.beginPath();
-  ctx.rect(14, y, W - 28, h);
-  ctx.clip();
-  ctx.font = `700 13px ${fonts.body}`;
-  ctx.textAlign = 'left';
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle = colors.safety;
+  ctx.lineWidth = 1.5;
+  roundRect(x, y, w, h, 12);
+  ctx.stroke();
   ctx.textBaseline = 'middle';
-  const widths = parts.map(([text]) => ctx.measureText(text).width);
-  const total = widths.reduce((a, b) => a + b, 0);
-  // 한 바퀴가 끝나면 바로 이어지도록 같은 줄을 화면이 찰 때까지 되풀이해 그림
-  let x = 14 - ((reduceMotion ? 0 : game.demoT * 46) % total);
-  while (x < W) {
-    parts.forEach(([text, color], i) => {
-      if (x + widths[i] > 0 && x < W) {
-        ctx.fillStyle = color;
-        ctx.fillText(text, x, y + h / 2 + 0.5);
-      }
-      x += widths[i];
-    });
+  ctx.textAlign = 'center';
+  ctx.fillStyle = colors.safety;
+  ctx.font = `400 22px ${fonts.display}`;
+  ctx.fillText('순위표', W / 2, y + 27);
+  if (!rows.length) {
+    ctx.fillStyle = colors.bubble;
+    ctx.font = `600 14px ${fonts.body}`;
+    ctx.fillText(boardOn() ? '아직 기록이 없어요' : '순위표 준비 중이에요', W / 2, y + 50 + rowH / 2);
+    ctx.restore();
+    return;
   }
+  rows.forEach((r, i) => {
+    const cy = y + 50 + i * rowH + rowH / 2;
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+    ctx.fillRect(x + 14, cy - rowH / 2, w - 28, 1);
+    ctx.textAlign = 'left';
+    ctx.fillStyle = colors.safety;
+    ctx.font = `700 15px ${fonts.body}`;
+    ctx.fillText(`${i + 1}위`, x + 16, cy);
+    const score = `${fmt(r.score)}점`;
+    ctx.textAlign = 'right';
+    ctx.fillStyle = colors.good;
+    ctx.fillText(score, x + w - 16, cy);
+    const scoreW = ctx.measureText(score).width;
+    ctx.textAlign = 'left';
+    ctx.fillStyle = colors.bubble;
+    ctx.font = `600 15px ${fonts.body}`;
+    ctx.fillText(r.name, x + 52, cy, w - 52 - 16 - scoreW - 12);
+  });
   ctx.restore();
 }
 
@@ -2737,14 +2751,14 @@ function render() {
     const amp = 5 * (game.shake / 0.3);
     ctx.translate((Math.random() - 0.5) * amp, (Math.random() - 0.5) * amp);
   }
-  if (game.demo) drawTicker();
-  else drawTopScore();
+  if (!game.demo) drawTopScore();
   drawPull(t);
   drawWall(t);
   drawParticles();
   drawHazard();
   drawFx();
   drawPaddle();
+  if (game.demo) drawDemoBoard();
   if (game.mode !== 'over') drawBall();
   if (game.demo) drawDemoHint();
   else if (game.banner) drawBanner();
