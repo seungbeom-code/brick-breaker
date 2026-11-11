@@ -1690,7 +1690,7 @@ function showMenu() {
   ];
   if (game.best > 0) spec.push(['내 최고 기록', `${fmt(game.best)}점`]);
   const top = ranks.rows[0];
-  if (boardOn() && top) spec.push(['전체 1위', `${fmt(top.score)}점 · ${top.name}`]);
+  if (boardOn() && top) spec.push(['전체 1위', `${fmt(top.score)}점 · 레벨 ${top.level} · ${top.name}`]);
   showOverlay({
     view: 'menu',
     eyebrow: '작업 안내',
@@ -2684,14 +2684,14 @@ function drawTopScore() {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.font = `600 12px ${fonts.body}`;
-  ctx.fillText(`1위 ${fmt(top.score)}점 · ${top.name}`, W / 2, 22, W - 24);
+  ctx.fillText(`1위 ${fmt(top.score)}점 · 레벨 ${top.level} · ${top.name}`, W / 2, 22, W - 24);
   ctx.restore();
 }
 
 // 데모 중의 순위표: 경기장 가운데에 5위까지 계속 보여 줌
 function drawDemoBoard() {
   const rows = ranks.rows.slice(0, 5);
-  const w = 312;
+  const w = 344;
   const rowH = 30;
   const h = 50 + Math.max(1, rows.length) * rowH + 10;
   const x = (W - w) / 2;
@@ -2733,10 +2733,15 @@ function drawDemoBoard() {
     ctx.fillStyle = colors.good;
     ctx.fillText(score, x + w - 16, cy);
     const scoreW = ctx.measureText(score).width;
+    const level = `레벨 ${r.level}`;
+    ctx.fillStyle = dim;
+    ctx.font = `600 12px ${fonts.body}`;
+    ctx.fillText(level, x + w - 16 - scoreW - 10, cy + 0.5);
+    const levelW = ctx.measureText(level).width;
     ctx.textAlign = 'left';
     ctx.fillStyle = colors.bubble;
     ctx.font = `600 15px ${fonts.body}`;
-    ctx.fillText(r.name, x + 52, cy, w - 52 - 16 - scoreW - 12);
+    ctx.fillText(r.name, x + 52, cy, w - 52 - 16 - scoreW - 10 - levelW - 10);
   });
   ctx.restore();
 }
