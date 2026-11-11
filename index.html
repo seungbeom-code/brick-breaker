@@ -521,7 +521,7 @@ const KEY_BOARD = 'brick-crew.board';
 const KEY_PENDING = 'brick-crew.pending';
 const MAX_LIVES = 9;
 const NAME_MAX = 24;                    // 순위표에 올리는 이름 길이 한도
-const PULL_R = 95;                      // 자철석이 공을 끌어당기는 거리
+const PULL_R = 150;                     // 자철석이 공을 끌어당기는 거리
 
 // 순위표 서버 (Firebase Firestore). project가 비어 있으면 순위표 기능이 꺼짐
 const BOARD = { project: 'brick-scores', top: 20 };
@@ -574,7 +574,74 @@ const WALLS = [
       return 1;
     },
   },
+  // 아래는 모양이 있는 벽. keep(벽돌 가운데 위치 mm, 켜 번호, 전체 켜 수, 그 켜에서 몇 번째)이 참인 벽돌만 남김
+  {
+    name: '박공벽',
+    tip: '지붕 아래 세모난 벽이에요. 꼭대기가 좁아요.',
+    courses: 8,
+    course: (r) => ({ pattern: 'S', offset: r % 2 ? 100 : 0 }),
+    keep: (mid, r) => Math.abs(mid - 700) <= 130 + r * 100,
+    hp: (p, r) => (r === 7 ? 2 : 1),
+  },
+  {
+    name: '영롱쌓기',
+    tip: '구멍을 내어 쌓은 벽이에요. 공이 사이로 빠져나가요.',
+    courses: 7,
+    course: (r) => ({ pattern: 'H', offset: r % 2 ? 50 : 0 }),
+    keep: (mid, r, courses, i) => i % 2 === 0,
+    hp: (p, r) => (r === 3 ? 2 : 1),
+  },
+  {
+    name: '성가퀴',
+    tip: '성벽 위처럼 들쭉날쭉한 벽이에요.',
+    courses: 7,
+    course: (r) => (r % 2 ? { pattern: 'H', offset: 50 } : { pattern: 'S', offset: 0 }),
+    keep: (mid, r) => r >= 2 || Math.floor(mid / 200) % 2 === 0,
+    hp: (p, r) => (r === 2 ? 2 : 1),
+  },
+  {
+    name: '아치문',
+    tip: '가운데에 문이 뚫려 있어요. 문 위 벽돌이 단단해요.',
+    courses: 8,
+    course: (r) => ({ pattern: 'SH', offset: r % 2 ? 150 : 0 }),
+    keep: (mid, r) => !(r >= 3 && Math.abs(mid - 700) < (r === 3 ? 170 : 290)),
+    hp: (p, r) => (r === 2 && Math.abs((p.a + p.b) / 2 - 700) < 330 ? 2 : 1),
+  },
+  {
+    name: '계단벽',
+    tip: '한쪽으로 내려가는 계단 모양이에요.',
+    courses: 8,
+    course: (r) => ({ pattern: 'S', offset: r % 2 ? 100 : 0 }),
+    keep: (mid, r) => mid <= 260 + r * 165,
+    hp: (p, r) => (r === 0 ? 2 : 1),
+  },
+  {
+    name: '마름모 벽',
+    tip: '가운데 노란 내화벽돌이 가장 단단해요.',
+    courses: 9,
+    course: (r) => ({ pattern: 'H', offset: r % 2 ? 50 : 0 }),
+    keep: (mid, r, courses) => Math.abs(mid - 700) / 720 + Math.abs(r - (courses - 1) / 2) / ((courses + 1) / 2) <= 1,
+    hp: (p, r) => (r >= 3 && r <= 5 && Math.abs((p.a + p.b) / 2 - 700) < 110 ? 3 : 1),
+  },
+  {
+    name: '쌍둥이 탑',
+    tip: '두 탑 사이가 비어 있어요.',
+    courses: 9,
+    course: (r) => ({ pattern: 'S', offset: r % 2 ? 100 : 0 }),
+    keep: (mid, r) => r < 2 || mid < 430 || mid > 970,
+    hp: (p, r) => (r === 1 ? 2 : 1),
+  },
+  {
+    name: '줄기둥',
+    tip: '기둥 네 개가 보를 받치고 있어요.',
+    courses: 8,
+    course: () => ({ pattern: 'S', offset: 0 }),
+    keep: (mid, r) => r === 0 || Math.floor(mid / 200) % 2 === 0,
+    hp: (p, r) => (r === 0 ? 2 : 1),
+  },
 ];
+// 레벨 순서: 기본 쌓기와 모양 있는 벽을 번갈아
+const WALL_ORDER = [0, 1, 5, 2, 6, 3, 7, 4, 8, 9, 10, 11, 12];
 
 /* ───────── 돌: 4레벨마다 새 돌이 하나씩 등장 ─────────
    hp      깨는 데 필요한 횟수          pts     한 번 맞힐 때 점수
@@ -684,6 +751,10 @@ const game = {
   lodes: [], // 이번 벽의 자철석들
   shake: 0, // 폭발로 화면이 흔들리는 남은 시간(초)
   submitted: false, // 이번 판 기록을 순위표에 올렸는지
+  demo: false, // 데모(혼자 돌아가는 화면) 중인지
+  demoT: 0, // 데모가 돌아간 시간(초)
+  demoWait: 0, // 데모에서 공을 쏘기 전 잠깐 기다리는 시간
+  demoWall: 0, // 데모에서 지금 벽을 보여 준 시간
   touchUI: matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0,
 };
 let H = 700;
@@ -720,7 +791,7 @@ const sound = {
     }
   },
   live() {
-    return !this.muted && this.ctx !== null && this.ctx.state === 'running';
+    return !this.muted && !game.demo && this.ctx !== null && this.ctx.state === 'running';
   },
   tone(freq, dur, type, vol, endFreq = 0, delay = 0) {
     if (!this.live()) return;
@@ -787,6 +858,7 @@ const sound = {
 };
 
 function buzz(ms) {
+  if (game.demo) return;
   try {
     if (navigator.vibrate) navigator.vibrate(ms);
   } catch (e) {
@@ -935,7 +1007,7 @@ function speedFactor(level) {
 }
 
 function buildLevel(n) {
-  const plan = WALLS[(n - 1) % WALLS.length];
+  const plan = WALLS[WALL_ORDER[(n - 1) % WALL_ORDER.length]];
   const tier = tierOf(n);
   const courses = plan.courses + Math.min(2, Math.floor(tier / 2));
   const toughChance = Math.min(0.5, tier * 0.1);
@@ -947,6 +1019,7 @@ function buildLevel(n) {
     let pieces = layCourse(pattern, offset);
     const op = plan.opening;
     if (op && r >= op.top && r <= op.bottom) pieces = cutOpening(pieces, op.from, op.to);
+    if (plan.keep) pieces = pieces.filter((p, i) => plan.keep((p.a + p.b) / 2, r, courses, i));
     pieces.forEach((p, i) => {
       let hp = plan.hp(p, r, i);
       if (toughRand() < toughChance) hp = Math.min(3, hp + 1);
@@ -1136,7 +1209,7 @@ function pullBall(dt) {
     ay += (dy / d) * f;
   }
   if (!ax && !ay) return;
-  const a = ball.speed * speedMul() * 2.6 * dt;
+  const a = ball.speed * speedMul() * 6 * dt;
   let vy = ball.vy + ay * a;
   if (vy * ball.vy <= 0) vy = ball.vy; // 위아래 방향까지 뒤집지는 않음 (공이 돌 둘레를 맴돌지 않게)
   setVelocity(ball.vx + ax * a, vy);
@@ -1337,7 +1410,7 @@ function updateParticles(dt) {
 /* ───────── 진행 ───────── */
 function addScore(n) {
   game.score += fx.double > 0 ? n * 2 : n;
-  if (game.score > game.best) game.best = game.score;
+  if (!game.demo && game.score > game.best) game.best = game.score;
   updateHud();
 }
 
@@ -1381,7 +1454,57 @@ function startGame() {
   levelBanner();
 }
 
+/* ───────── 데모: 시작 화면에서 가만히 두면 게임이 혼자 돌아가고, 순위표가 전광판처럼 흐름 ───────── */
+const DEMO_WAIT = 8000; // 시작 화면에서 이만큼(ms) 아무 입력이 없으면 데모 시작
+let lastInput = performance.now();
+
+function demoWall() {
+  // 여러 벽과 돌을 골고루 보여 주려고 레벨을 아무거나 고름
+  game.level = 1 + Math.floor(Math.random() * 40);
+  buildLevel(game.level);
+  resetBall();
+  game.mode = 'ready';
+  game.demoWait = 0;
+  game.demoWall = 0;
+  updateHud();
+}
+
+function startDemo() {
+  game.demo = true;
+  game.demoT = 0;
+  game.score = 0;
+  game.lives = START_LIVES;
+  game.banner = null;
+  game.armed = false;
+  particles = [];
+  paddle.x = paddle.target = W / 2;
+  hideOverlay();
+  ui.pause.disabled = true;
+  demoWall();
+  loadBoard();
+}
+
+// 데모의 자동 조종: 사람처럼 조금 늦게 따라가고, 맞히는 위치를 계속 바꿈
+function demoStep(dt) {
+  game.demoT += dt;
+  game.demoWall += dt;
+  if (game.mode === 'ready') {
+    game.demoWait += dt;
+    if (game.demoWait > 0.9) launch();
+  } else if (game.demoWall > 70) {
+    demoWall(); // 한 벽에 너무 오래 머물지 않게
+    return;
+  }
+  const aim = ball.x + Math.sin(game.demoT * 1.7) * paddle.w * 0.36;
+  const reach = 640 * dt;
+  paddle.target += clamp(aim - paddle.target, -reach, reach);
+}
+
 function levelClear() {
+  if (game.demo) {
+    demoWall();
+    return;
+  }
   addScore(100);
   saveBest();
   game.level += 1;
@@ -1406,6 +1529,13 @@ function levelClear() {
 }
 
 function loseLife() {
+  if (game.demo) {
+    // 데모에서는 공을 놓쳐도 그냥 다시 시작
+    resetBall();
+    game.mode = 'ready';
+    game.demoWait = 0;
+    return;
+  }
   game.lives -= 1;
   sound.lose();
   buzz(80);
@@ -1459,6 +1589,7 @@ function viewLinks(back) {
 }
 
 function pause() {
+  if (game.demo) return;
   if (game.mode !== 'playing' && game.mode !== 'ready') return;
   game.resumeMode = game.mode;
   game.mode = 'paused';
@@ -1490,6 +1621,20 @@ function resume() {
 }
 
 function showMenu() {
+  if (game.demo) {
+    // 데모를 끝내고 처음 상태로
+    game.demo = false;
+    game.score = 0;
+    game.lives = START_LIVES;
+    game.level = 1;
+    game.banner = null;
+    particles = [];
+    buildLevel(1);
+    paddle.x = paddle.target = W / 2;
+    resetBall();
+    updateHud();
+  }
+  lastInput = performance.now();
   game.mode = 'menu';
   const spec = [
     ['조작', game.touchUI ? '화면을 누른 채 좌우로 밀고, 손을 떼면 발사' : '마우스나 ← → 키로 이동, 클릭이나 스페이스로 발사'],
@@ -2496,6 +2641,61 @@ function drawTopScore() {
   ctx.restore();
 }
 
+// 데모 중의 순위표 전광판: 주식 시세판처럼 오른쪽에서 왼쪽으로 흐름
+function drawTicker() {
+  const y = 8;
+  const h = 28;
+  const white = colors.bubble;
+  const dim = 'rgba(255, 255, 255, 0.55)';
+  const parts = [['순위표', colors.safety], ['  ◆  ', dim]];
+  if (ranks.rows.length) {
+    ranks.rows.forEach((r, i) => {
+      parts.push([`${i + 1}위 `, colors.safety], [`${r.name} `, white], [`▲ ${fmt(r.score)}점 `, colors.good], [`레벨 ${r.level}`, dim], ['  ◆  ', dim]);
+    });
+  } else {
+    parts.push([boardOn() ? '아직 기록이 없어요. 첫 기록을 남겨 보세요' : '순위표 준비 중이에요', white], ['  ◆  ', dim]);
+  }
+  ctx.save();
+  ctx.fillStyle = colors.cap;
+  roundRect(8, y, W - 16, h, 7);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.rect(14, y, W - 28, h);
+  ctx.clip();
+  ctx.font = `700 13px ${fonts.body}`;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  const widths = parts.map(([text]) => ctx.measureText(text).width);
+  const total = widths.reduce((a, b) => a + b, 0);
+  // 한 바퀴가 끝나면 바로 이어지도록 같은 줄을 화면이 찰 때까지 되풀이해 그림
+  let x = 14 - ((reduceMotion ? 0 : game.demoT * 46) % total);
+  while (x < W) {
+    parts.forEach(([text, color], i) => {
+      if (x + widths[i] > 0 && x < W) {
+        ctx.fillStyle = color;
+        ctx.fillText(text, x, y + h / 2 + 0.5);
+      }
+      x += widths[i];
+    });
+  }
+  ctx.restore();
+}
+
+function drawDemoHint() {
+  const pulse = reduceMotion ? 0.9 : 0.62 + 0.3 * Math.sin(performance.now() / 320);
+  ctx.save();
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.globalAlpha = pulse;
+  ctx.fillStyle = colors.ink;
+  ctx.font = `400 26px ${fonts.display}`;
+  ctx.fillText('데모 화면', W / 2, paddle.y - 92);
+  ctx.fillStyle = colors.muted;
+  ctx.font = `600 15px ${fonts.body}`;
+  ctx.fillText(game.touchUI ? '화면을 누르면 시작해요' : '아무 키나 누르면 시작해요', W / 2, paddle.y - 62);
+  ctx.restore();
+}
+
 // 켜져 있는 효과: 패들 아래에 이름과 남은 시간 막대
 function drawFx() {
   const active = Object.keys(fx).filter((name) => fx[name] > 0);
@@ -2537,7 +2737,8 @@ function render() {
     const amp = 5 * (game.shake / 0.3);
     ctx.translate((Math.random() - 0.5) * amp, (Math.random() - 0.5) * amp);
   }
-  drawTopScore();
+  if (game.demo) drawTicker();
+  else drawTopScore();
   drawPull(t);
   drawWall(t);
   drawParticles();
@@ -2545,7 +2746,8 @@ function render() {
   drawFx();
   drawPaddle();
   if (game.mode !== 'over') drawBall();
-  if (game.banner) drawBanner();
+  if (game.demo) drawDemoHint();
+  else if (game.banner) drawBanner();
   else if (game.mode === 'ready') drawHint();
 }
 
@@ -2553,6 +2755,7 @@ function render() {
 function update(dt) {
   if (game.mode === 'paused' || game.mode === 'menu') return;
   if (game.mode === 'ready' || game.mode === 'playing') {
+    if (game.demo) demoStep(dt);
     if (keys.left) paddle.target -= KEY_SPEED * dt;
     if (keys.right) paddle.target += KEY_SPEED * dt;
     // 패들 길이: 옥을 깨면 한동안 길어졌다가 부드럽게 돌아옴
@@ -2594,6 +2797,13 @@ function frame(now) {
   requestAnimationFrame(frame);
   const dt = Math.min(0.05, Math.max(0, (now - last) / 1000));
   last = now;
+  // 시작 화면(또는 더 할 일이 없는 게임 오버 화면)을 그대로 두면 데모로
+  const view = ui.overlay.dataset.view;
+  if (!game.demo && !ui.overlay.hidden) {
+    const idle = now - lastInput;
+    if (game.mode === 'menu' && view === 'menu' && idle > DEMO_WAIT) startDemo();
+    else if (game.mode === 'over' && view === '' && idle > 20000 && (game.submitted || game.score === 0 || !boardOn())) showMenu();
+  }
   update(dt);
   const active = game.mode === 'ready' || game.mode === 'playing' || particles.length > 0;
   if (active || needsRender) {
@@ -2608,10 +2818,18 @@ function pointerX(clientX) {
   return r.width > 0 ? ((clientX - r.left) / r.width) * W : paddle.target;
 }
 const isControl = (t) => t instanceof Element && t.closest('.hud, .overlay') !== null;
-const inPlay = () => game.mode === 'ready' || game.mode === 'playing';
+const inPlay = () => !game.demo && (game.mode === 'ready' || game.mode === 'playing');
 
 app.addEventListener('pointerdown', (e) => {
   lastKeyboard = false;
+  lastInput = performance.now();
+  if (game.demo) {
+    // 데모 중에 화면을 누르면 시작 화면으로
+    e.preventDefault();
+    sound.unlock();
+    showMenu();
+    return;
+  }
   if (isControl(e.target)) return;
   sound.unlock();
   game.touchUI = e.pointerType !== 'mouse';
@@ -2658,7 +2876,13 @@ function nameKey(e) {
 
 window.addEventListener('keydown', (e) => {
   lastKeyboard = true;
+  lastInput = performance.now();
   sound.unlock();
+  if (game.demo) {
+    e.preventDefault();
+    showMenu();
+    return;
+  }
   if (nameEntry.active) {
     nameKey(e);
     return;
@@ -2766,7 +2990,7 @@ window.addEventListener('pagehide', saveBest);
 function snapshot() {
   return {
     v: 2,
-    mode: game.mode === 'paused' ? game.resumeMode : game.mode,
+    mode: game.demo ? 'menu' : game.mode === 'paused' ? game.resumeMode : game.mode,
     score: game.score,
     level: game.level,
     lives: game.lives,
