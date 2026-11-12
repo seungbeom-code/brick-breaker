@@ -1519,8 +1519,8 @@ function drawCombo() {
   ctx.restore();
 }
 
-/* ───────── 데모: 시작 화면에서 가만히 두면 게임이 혼자 돌아가고, 순위표가 전광판처럼 흐름 ───────── */
-const DEMO_WAIT = 8000; // 시작 화면에서 이만큼(ms) 아무 입력이 없으면 데모 시작
+/* ───────── 데모: 처음 열면 게임이 혼자 돌아가고, 가운데에 순위표 5위까지가 보임 ───────── */
+const DEMO_WAIT = 8000; // 데모에서 시작 화면으로 나온 뒤 이만큼(ms) 아무 입력이 없으면 다시 데모
 let lastInput = performance.now();
 
 function demoWall() {
@@ -3141,6 +3141,7 @@ function start(saved) {
   if (!restore(kept)) {
     game.resumed = false;
     showMenu();
+    startDemo(); // 처음 열면 기다리지 않고 바로 데모부터
   }
   if ('ResizeObserver' in window) new ResizeObserver(() => layout()).observe(stage);
   else window.addEventListener('resize', layout);
