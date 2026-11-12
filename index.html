@@ -674,7 +674,17 @@ const FX = {
   slow: { label: '공 느림', good: true },
   wide: { label: '긴 패들', good: true },
   double: { label: '점수 2배', good: true },
+  fire: { label: '불공', good: true },
 };
+
+// 떨어지는 보물: 패들로 받으면 효과가 생김. w: 나올 비율
+const DROPS = {
+  coin: { color: '#ffd24a', w: 5 },
+  multi: { color: '#6fd3ff', w: 3, short: '공×3' },
+  fire: { color: '#ff7a2e', w: 2, short: '불공' },
+};
+const FEVER_AT = 10; // 콤보가 여기에 닿으면 피버(불공)
+const PARTY = ['#ffd24a', '#ff7a2e', '#6fd3ff', '#ff6fa8', '#9dff8a'];
 
 const ICONS = {
   soundOn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6"/><path d="M18.5 6.5a8 8 0 0 1 0 11"/></svg>',
@@ -754,6 +764,7 @@ const game = {
   newStone: null, // 이번 레벨에 처음 나온 돌
   lodes: [], // 이번 벽의 자철석들
   shake: 0, // 폭발로 화면이 흔들리는 남은 시간(초)
+  flash: 0, // 폭발 · 피버 때 화면이 잠깐 밝아지는 남은 시간(초)
   submitted: false, // 이번 판 기록을 순위표에 올렸는지
   resumed: false, // 저장해 둔 판을 막 불러온 상태인지 (안내 문구용)
   demo: false, // 데모(혼자 돌아가는 화면) 중인지
@@ -765,10 +776,12 @@ const game = {
 let H = 700;
 let bricks = [];
 let particles = [];
-const paddle = { x: W / 2, target: W / 2, y: H - PADDLE_GAP - PADDLE_H, w: 86, baseW: 86, h: PADDLE_H, vx: 0, bubble: 0 };
+let extras = []; // 보물 '공 3개'로 늘어난 덤 공들 ({ x, y, vx, vy, trail })
+let drops = []; // 벽돌에서 떨어지는 보물
+const paddle = { x: W / 2, target: W / 2, y: H - PADDLE_GAP - PADDLE_H, w: 86, baseW: 86, h: PADDLE_H, vx: 0, bubble: 0, glow: 0 };
 const ball = { x: W / 2, y: 0, vx: 0, vy: 0, r: BALL_R, speed: 290, stuck: true, trail: [] };
-const fx = { fast: 0, slow: 0, wide: 0, double: 0 }; // 효과별 남은 시간(초)
-const fxFull = { fast: 1, slow: 1, wide: 1, double: 1 }; // 효과가 시작될 때의 시간 (남은 시간 막대용)
+const fx = { fast: 0, slow: 0, wide: 0, double: 0, fire: 0 }; // 효과별 남은 시간(초)
+const fxFull = { fast: 1, slow: 1, wide: 1, double: 1, fire: 1 }; // 효과가 시작될 때의 시간 (남은 시간 막대용)
 const keys = { left: false, right: false };
 const overlayActions = { primary: null, secondary: null, back: null };
 let colors = {};
@@ -860,6 +873,10 @@ const sound = {
   zing() { this.tone(420, 0.14, 'sawtooth', 0.04, 1300); },
   blub() { this.tone(520, 0.2, 'sine', 0.1, 190); },
   key() { this.tone(660, 0.03, 'triangle', 0.05); },
+  coin() { this.tone(1320, 0.06, 'square', 0.04); this.tone(1760, 0.16, 'square', 0.04, 0, 0.06); },
+  power() { [523, 659, 784, 1047].forEach((f, i) => this.tone(f, 0.12, 'triangle', 0.09, 0, i * 0.05)); },
+  fever() { [392, 523, 659, 784, 1047, 1319].forEach((f, i) => this.tone(f, 0.14, 'sawtooth', 0.04, 0, i * 0.045)); },
+  step(n) { this.tone(Math.min(1760, 392 * Math.pow(1.122, n - 2)), 0.09, 'triangle', 0.05); },
 };
 
 function buzz(ms) {
@@ -1122,6 +1139,8 @@ function resetBall() {
   ball.trail.length = 0;
   game.dry = 0;
   game.combo = 0;
+  extras = [];
+  drops = [];
   clearFx();
   placeOnPaddle();
 }
@@ -1175,6 +1194,49 @@ function setVelocity(vx, vy) {
 }
 
 function stepBall(dt) {
+  moveBall(dt);
+  if (game.remaining <= 0) {
+    levelClear();
+    return;
+  }
+  if (ball.y - ball.r > H) {
+    // 덤 공이 남아 있으면 그 공으로 이어 가고, 없으면 공 하나를 잃음
+    const next = extras.shift();
+    if (!next) {
+      loseLife();
+      return;
+    }
+    ball.x = next.x;
+    ball.y = next.y;
+    ball.vx = next.vx;
+    ball.vy = next.vy;
+    ball.trail = next.trail;
+  }
+  // 덤 공: 잠깐 본 공 자리에 넣어 같은 계산을 돌린 뒤 되돌려 놓음
+  for (let i = extras.length - 1; i >= 0; i--) {
+    const e = extras[i];
+    const keep = { x: ball.x, y: ball.y, vx: ball.vx, vy: ball.vy };
+    ball.x = e.x;
+    ball.y = e.y;
+    setVelocity(e.vx, e.vy);
+    moveBall(dt);
+    e.x = ball.x;
+    e.y = ball.y;
+    e.vx = ball.vx;
+    e.vy = ball.vy;
+    ball.x = keep.x;
+    ball.y = keep.y;
+    ball.vx = keep.vx;
+    ball.vy = keep.vy;
+    if (game.remaining <= 0) {
+      levelClear();
+      return;
+    }
+    if (e.y - ball.r > H) extras.splice(i, 1);
+  }
+}
+
+function moveBall(dt) {
   ball.x += ball.vx * dt;
   ball.y += ball.vy * dt;
 
@@ -1182,22 +1244,23 @@ function stepBall(dt) {
     ball.x = ball.r;
     ball.vx = Math.abs(ball.vx);
     sound.wall();
+    sparks(0, ball.y, colors.shine, 4, 110);
   } else if (ball.x > W - ball.r) {
     ball.x = W - ball.r;
     ball.vx = -Math.abs(ball.vx);
     sound.wall();
+    sparks(W, ball.y, colors.shine, 4, 110);
   }
   if (ball.y < ball.r) {
     ball.y = ball.r;
     ball.vy = Math.abs(ball.vy);
     sound.wall();
+    sparks(ball.x, 0, colors.shine, 4, 110);
   }
 
   pullBall(dt);
   if (ball.vy > 0) hitPaddle();
   hitBricks();
-  if (game.remaining <= 0) levelClear();
-  else if (game.mode === 'playing' && ball.y - ball.r > H) loseLife();
 }
 
 // 자철석: 가까이 지나가는 공의 방향을 돌 쪽으로 조금씩 꺾음 (속력은 그대로)
@@ -1229,8 +1292,10 @@ function hitPaddle() {
   if (ball.y > paddle.y + paddle.h * 0.5) return; // 이미 패들 아래로 지나감
   // 패들 가운데에 맞으면 위로, 끝에 맞을수록 옆으로 비스듬히.
   // 벽돌을 못 깨고 왕복만 반복하면 각도를 조금씩 더 흔들어 같은 길만 도는 걸 막음
-  endCombo();
+  if (!extras.length) endCombo(); // 공이 여러 개인 동안에는 콤보가 이어짐
   game.dry += 1;
+  paddle.glow = 1;
+  sparks(ball.x, paddle.y, fx.fire > 0 ? DROPS.fire.color : colors.safety, 7, 150);
   const t = clamp((ball.x - paddle.x) / (paddle.w / 2), -1, 1);
   const jitter = (Math.random() - 0.5) * (0.06 + Math.min(0.4, game.dry * 0.03));
   const angle = clamp(t * MAX_BOUNCE + jitter, -MAX_BOUNCE, MAX_BOUNCE);
@@ -1260,6 +1325,12 @@ function hitBricks() {
     }
   }
   if (!hit) return;
+  if (fx.fire > 0) {
+    // 불공: 무엇이든 한 번에 부수고 그대로 뚫고 지나감
+    hit.hp = 1;
+    damageBrick(hit);
+    return;
+  }
   if (hit.kind && hit.kind.pierce) {
     // 무른 돌: 튕기지 않고 그대로 뚫고 지나감
     damageBrick(hit);
@@ -1326,6 +1397,10 @@ function damageBrick(k) {
   game.comboPop = 0.18;
   burst(k, brickColor(k));
   sound.crumble();
+  if (game.combo >= 3) sound.step(game.combo); // 콤보가 이어질수록 음이 올라감
+  if (game.combo >= COMBO_MIN) game.shake = Math.max(game.shake, 0.08);
+  if (game.combo === FEVER_AT) fever();
+  maybeDrop(k);
   ball.speed = Math.min(ball.speed + 2.5, baseSpeed() * 1.35);
   if (!ball.stuck) setVelocity(ball.vx, ball.vy);
   if (!s) return;
@@ -1349,6 +1424,8 @@ function explode(k) {
     (b) => b.alive && b.x < k.x + k.w + 30 && b.x + b.w > k.x - 30 && b.y < k.y + k.h + COURSE && b.y + b.h > k.y - COURSE,
   );
   game.shake = 0.3;
+  game.flash = 0.22;
+  sparks(k.x + k.w / 2, k.y + k.h / 2, DROPS.fire.color, 22, 300);
   sound.boom();
   buzz(30);
   if (!reduceMotion) {
@@ -1369,6 +1446,93 @@ function gainLife(k) {
   sound.chime();
 }
 
+/* ───────── 피버 · 떨어지는 보물 ───────── */
+// 콤보 10: 잠깐 불공이 됨
+function fever() {
+  startFx('fire', Math.max(fx.fire, 5));
+  game.flash = 0.25;
+  particles.push({ text: '피버! 불공', x: W / 2, y: Math.max(game.wallBottom + 96, H * 0.5), life: 0, max: 1.5, color: DROPS.fire.color, big: true });
+  for (let i = 0; i < 3; i++) sparks(W * (0.25 + i * 0.25), H * 0.45, PARTY[i], 16, 240, i * 0.08);
+  sound.fever();
+  buzz(25);
+}
+
+function maybeDrop(k) {
+  if (drops.length >= 3 || Math.random() > 0.11) return;
+  const r = Math.random() * 10;
+  const type = r < DROPS.coin.w ? 'coin' : r < DROPS.coin.w + DROPS.multi.w ? 'multi' : 'fire';
+  drops.push({ type, x: clamp(k.x + k.w / 2, 20, W - 20), y: k.y + k.h / 2, vy: 50, t: 0, gone: false });
+}
+
+function updateDrops(dt) {
+  if (!drops.length) return;
+  for (const d of drops) {
+    d.t += dt;
+    d.vy = Math.min(185, d.vy + 240 * dt);
+    d.y += d.vy * dt;
+    if (d.y + 9 >= paddle.y && d.y - 9 <= paddle.y + paddle.h && Math.abs(d.x - paddle.x) <= paddle.w / 2 + 12) {
+      d.gone = true;
+      collect(d);
+    } else if (d.y - 14 > H) d.gone = true;
+  }
+  drops = drops.filter((d) => !d.gone);
+}
+
+function collect(d) {
+  const color = DROPS[d.type].color;
+  const at = { x: d.x, w: 0, y: paddle.y - 26, h: 0 };
+  paddle.glow = 1;
+  sparks(d.x, paddle.y, color, 16, 220);
+  buzz(15);
+  if (d.type === 'coin') {
+    floater(fx.double > 0 ? '+400' : '+200', at, color);
+    addScore(200);
+    sound.coin();
+  } else if (d.type === 'multi') {
+    splitBall();
+    floater('공 3개!', at, color);
+    sound.power();
+  } else {
+    startFx('fire', Math.max(fx.fire, 7));
+    floater('불공!', at, color);
+    sound.power();
+  }
+}
+
+// 지금 공에서 양옆으로 덤 공 두 개가 갈라져 나옴 (덤 공은 놓쳐도 공을 잃지 않음)
+function splitBall() {
+  if (ball.stuck) return;
+  const sp = Math.hypot(ball.vx, ball.vy);
+  for (const a of [-0.5, 0.5]) {
+    if (extras.length >= 4) break;
+    let vx = ball.vx * Math.cos(a) - ball.vy * Math.sin(a);
+    let vy = ball.vx * Math.sin(a) + ball.vy * Math.cos(a);
+    if (Math.abs(vy) < sp * 0.3) {
+      vy = (vy < 0 ? -1 : 1) * sp * 0.3;
+      vx = (vx < 0 ? -1 : 1) * Math.sqrt(sp * sp - vy * vy);
+    }
+    extras.push({ x: ball.x, y: ball.y, vx, vy, trail: [] });
+  }
+}
+
+// 빛나는 불티. delay(초)를 주면 조금 뒤에 터짐
+function sparks(x, y, color, n, speed = 160, delay = 0) {
+  if (reduceMotion) n = Math.ceil(n / 4);
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const sp = speed * (0.3 + Math.random() * 0.7);
+    particles.push({ glow: true, x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: -delay, max: 0.35 + Math.random() * 0.5, size: 1.2 + Math.random() * 1.8, color });
+  }
+}
+
+// 벽을 다 허물었을 때의 불꽃놀이
+function fireworks(n) {
+  if (reduceMotion) return;
+  for (let i = 0; i < n; i++) {
+    sparks(W * (0.15 + Math.random() * 0.7), H * (0.14 + Math.random() * 0.36), PARTY[i % PARTY.length], 26, 250, i * 0.16);
+  }
+}
+
 // 벽돌 자리에서 떠오르는 짧은 글자
 function floater(text, k, color) {
   particles.push({ text, x: clamp(k.x + k.w / 2, 40, W - 40), y: k.y + k.h / 2, life: 0, max: 1.1, color });
@@ -1376,7 +1540,8 @@ function floater(text, k, color) {
 
 /* ───────── 파편 ───────── */
 function burst(k, color) {
-  const n = reduceMotion ? 4 : 10;
+  const n = reduceMotion ? 4 : 13;
+  sparks(k.x + k.w / 2, k.y + k.h / 2, fx.fire > 0 ? DROPS.fire.color : colors.shine, fx.fire > 0 ? 9 : 5, 190);
   for (let i = 0; i < n; i++) {
     const a = Math.random() * Math.PI * 2;
     const sp = 50 + Math.random() * 170;
@@ -1396,14 +1561,21 @@ function burst(k, color) {
   if (!reduceMotion) {
     particles.push({ ring: true, x: k.x + k.w / 2, y: k.y + k.h / 2, life: 0, max: 0.32, color });
   }
-  if (particles.length > 300) particles.splice(0, particles.length - 300);
 }
 
 function updateParticles(dt) {
   if (!particles.length) return;
+  if (particles.length > 480) particles.splice(0, particles.length - 480);
   for (const p of particles) {
     p.life += dt;
-    if (p.ring) continue;
+    if (p.ring || p.life < 0) continue;
+    if (p.glow) {
+      p.vy += 230 * dt;
+      p.vx *= 1 - Math.min(1, dt * 1.6);
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      continue;
+    }
     if (p.text) {
       p.y -= 26 * dt;
       continue;
@@ -1507,15 +1679,20 @@ function drawCombo() {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.globalAlpha = 0.9;
-  ctx.fillStyle = bonus ? colors.safety : colors.muted;
+  const hot = n >= FEVER_AT; // 피버부터는 무지갯빛으로 반짝임
+  ctx.fillStyle = hot && !reduceMotion ? `hsl(${(performance.now() / 4) % 360} 95% 66%)` : bonus ? colors.safety : colors.muted;
   ctx.save();
   ctx.scale(pop, pop);
-  ctx.font = `400 ${bonus ? 34 : 26}px ${fonts.display}`;
+  if (bonus) {
+    ctx.shadowColor = ctx.fillStyle;
+    ctx.shadowBlur = hot ? 18 : 10;
+  }
+  ctx.font = `400 ${bonus ? Math.min(46, 34 + (n - COMBO_MIN)) : 26}px ${fonts.display}`;
   ctx.fillText(`콤보 ${n}`, 0, 0);
   ctx.restore();
   ctx.font = `600 13px ${fonts.body}`;
   ctx.fillStyle = colors.muted;
-  ctx.fillText(bonus ? `보너스 +${fmt(n * 50)}` : `${COMBO_MIN}개부터 보너스`, 0, bonus ? 28 : 23);
+  ctx.fillText(bonus ? `보너스 +${fmt(n * 50)}` : `${COMBO_MIN}개부터 보너스`, 0, bonus ? Math.min(34, 28 + (n - COMBO_MIN) * 0.5) : 23);
   ctx.restore();
 }
 
@@ -1560,7 +1737,9 @@ function demoStep(dt) {
     demoWall(); // 한 벽에 너무 오래 머물지 않게
     return;
   }
-  const aim = ball.x + Math.sin(game.demoT * 1.7) * paddle.w * 0.36;
+  let near = ball; // 가장 먼저 내려오는 공을 따라감
+  for (const e of extras) if (e.vy > 0 && (near.vy <= 0 || e.y > near.y)) near = e;
+  const aim = near.x + Math.sin(game.demoT * 1.7) * paddle.w * 0.36;
   const reach = 640 * dt;
   paddle.target += clamp(aim - paddle.target, -reach, reach);
 }
@@ -1592,6 +1771,7 @@ function levelClear() {
   sound.clear();
   updateHud();
   levelBanner(kicker);
+  fireworks((game.level - 1) % 10 === 0 ? 9 : 5);
 }
 
 function loseLife() {
@@ -1623,6 +1803,8 @@ function gameOver() {
   game.banner = null;
   game.submitted = false;
   ranks.mine = null;
+  extras = [];
+  drops = [];
   clearFx();
   saveBest();
   showOver();
@@ -1709,7 +1891,8 @@ function showMenu() {
   const spec = [
     ['조작', game.touchUI ? '화면을 누른 채 좌우로 밀고, 손을 떼면 발사' : '마우스나 ← → 키로 이동, 클릭이나 스페이스로 발사'],
     ['단단한 벽돌', '클링커 2번, 내화벽돌 3번'],
-    ['콤보', '공이 패들에 닿기 전에 5개 이상 연달아 깨면 개수 × 50점'],
+    ['콤보', '공이 패들에 닿기 전에 5개 이상 연달아 깨면 개수 × 50점, 10개면 피버(불공)'],
+    ['보물', '떨어지는 보물을 패들로 받으면 금화 +200 · 공 3개 · 불공'],
     ['레벨', '4레벨마다 새 돌이 나오고, 10레벨마다 난이도가 오르고 공을 하나 받아요'],
   ];
   if (game.best > 0) spec.push(['내 최고 기록', `${fmt(game.best)}점`]);
@@ -2517,7 +2700,22 @@ function drawWall(t) {
 
 function drawParticles() {
   for (const p of particles) {
+    if (p.life < 0) continue;
     const f = clamp(p.life / p.max, 0, 1);
+    if (p.glow) {
+      // 불티: 날아가는 방향으로 짧은 꼬리를 끌며 빛남
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.globalAlpha = 1 - f;
+      ctx.strokeStyle = p.color;
+      ctx.lineWidth = p.size * (1 - f * 0.5);
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y);
+      ctx.lineTo(p.x - p.vx * 0.035, p.y - p.vy * 0.035);
+      ctx.stroke();
+      ctx.globalCompositeOperation = 'source-over';
+      continue;
+    }
     if (p.ring) {
       // 벽돌이 깨진 자리에서 퍼지는 충격 고리
       ctx.globalAlpha = (1 - f) * 0.5;
@@ -2586,8 +2784,14 @@ function drawPaddle() {
   body.addColorStop(0, colors.safety);
   body.addColorStop(1, colors.safetyDeep);
   ctx.fillStyle = body;
+  if (paddle.glow > 0 || fx.fire > 0) {
+    // 공이나 보물을 받으면 잠깐 빛남
+    ctx.shadowColor = fx.fire > 0 ? DROPS.fire.color : colors.safety;
+    ctx.shadowBlur = 6 + 18 * paddle.glow;
+  }
   roundRect(x, y, w, h, 4);
   ctx.fill();
+  ctx.shadowBlur = 0;
   ctx.fillStyle = colors.cap;
   roundRect(x, y, 8, h, 4);
   ctx.fill();
@@ -2619,27 +2823,142 @@ function drawPaddle() {
 }
 
 function drawBall() {
+  for (const e of extras) drawOneBall(e);
+  drawOneBall(ball);
+}
+
+function drawOneBall(b) {
+  const fire = fx.fire > 0;
+  const hot = fire ? DROPS.fire.color : fx.fast > 0 ? colors.bad : fx.slow > 0 ? colors.good : colors.steel;
   if (!reduceMotion && !ball.stuck) {
-    const n = ball.trail.length;
-    ball.trail.forEach((p, i) => {
+    const n = b.trail.length;
+    if (fire) ctx.globalCompositeOperation = 'lighter';
+    b.trail.forEach((p, i) => {
       const f = (i + 1) / (n + 1);
-      ctx.globalAlpha = f * f * 0.2;
-      ctx.fillStyle = colors.steel;
+      ctx.globalAlpha = f * f * (fire ? 0.5 : 0.3);
+      ctx.fillStyle = fire && i % 2 ? DROPS.coin.color : hot;
       ctx.beginPath();
-      ctx.arc(p.x, p.y, ball.r * (0.3 + 0.65 * f), 0, Math.PI * 2);
+      ctx.arc(p.x, p.y, ball.r * (0.3 + 0.65 * f) * (fire ? 1.3 : 1), 0, Math.PI * 2);
       ctx.fill();
     });
+    // 공 둘레의 빛무리
+    const rr = ball.r * (fire ? 4.4 + Math.sin(performance.now() / 60) * 0.5 : 2.8);
+    const halo = ctx.createRadialGradient(b.x, b.y, ball.r * 0.6, b.x, b.y, rr);
+    halo.addColorStop(0, hot);
+    halo.addColorStop(1, 'transparent');
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = fire ? 0.6 : 0.3;
+    ctx.fillStyle = halo;
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, rr, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalCompositeOperation = 'source-over';
     ctx.globalAlpha = 1;
   }
-  // 쇠공: 왼쪽 위에서 빛을 받는 구슬처럼
-  const g = ctx.createRadialGradient(ball.x - 2.4, ball.y - 2.6, 0.4, ball.x, ball.y, ball.r);
-  g.addColorStop(0, colors.shine);
-  g.addColorStop(0.4, colors.steel);
-  g.addColorStop(1, colors.steelDeep);
+  // 쇠공: 왼쪽 위에서 빛을 받는 구슬처럼. 불공일 때는 달궈진 빛깔
+  const g = ctx.createRadialGradient(b.x - 2.4, b.y - 2.6, 0.4, b.x, b.y, ball.r);
+  if (fire) {
+    g.addColorStop(0, '#fff7c2');
+    g.addColorStop(0.45, '#ffb53a');
+    g.addColorStop(1, '#e8451a');
+  } else {
+    g.addColorStop(0, colors.shine);
+    g.addColorStop(0.4, colors.steel);
+    g.addColorStop(1, colors.steelDeep);
+  }
   ctx.fillStyle = g;
   ctx.beginPath();
-  ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
+  ctx.arc(b.x, b.y, ball.r, 0, Math.PI * 2);
   ctx.fill();
+}
+
+// 떨어지는 보물: 동전은 빙글빙글 도는 금화, 나머지는 이름이 적힌 알약 모양
+function drawDrops() {
+  for (const d of drops) {
+    const spec = DROPS[d.type];
+    ctx.save();
+    ctx.translate(d.x, d.y);
+    const halo = ctx.createRadialGradient(0, 0, 4, 0, 0, 24);
+    halo.addColorStop(0, spec.color);
+    halo.addColorStop(1, 'transparent');
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = 0.4 + (reduceMotion ? 0 : 0.15 * Math.sin(d.t * 9));
+    ctx.fillStyle = halo;
+    ctx.beginPath();
+    ctx.arc(0, 0, 24, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = 1;
+    if (d.type === 'coin') {
+      const turn = reduceMotion ? 1 : 0.25 + 0.75 * Math.abs(Math.cos(d.t * 4.5));
+      ctx.scale(turn, 1);
+      const g = ctx.createLinearGradient(0, -9, 0, 9);
+      g.addColorStop(0, '#fff3a8');
+      g.addColorStop(0.5, spec.color);
+      g.addColorStop(1, '#c8891a');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(0, 0, 9, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#8a5a0c';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.arc(0, 0, 5.6, 0, Math.PI * 2);
+      ctx.stroke();
+    } else {
+      if (!reduceMotion) ctx.rotate(Math.sin(d.t * 5) * 0.12);
+      const g = ctx.createLinearGradient(0, -8, 0, 8);
+      g.addColorStop(0, '#ffffff');
+      g.addColorStop(0.35, spec.color);
+      g.addColorStop(1, spec.color);
+      ctx.fillStyle = g;
+      roundRect(-19, -8.5, 38, 17, 8.5);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.35)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.fillStyle = '#1a1206';
+      ctx.font = `800 11px ${fonts.body}`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(spec.short, 0, 0.5);
+    }
+    ctx.restore();
+  }
+}
+
+// 배경: 천천히 떠오르는 불티와, 콤보가 쌓이거나 불공일 때 바닥에서 올라오는 빛
+const MOTES = Array.from({ length: 30 }, () => ({ x: Math.random(), y: Math.random(), r: 0.6 + Math.random() * 1.5, s: 7 + Math.random() * 20, w: 0.4 + Math.random() * 0.9, p: Math.random() * 6.3 }));
+function drawBackdrop(t) {
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, colors.field);
+  bg.addColorStop(1, colors.field2);
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+  if (reduceMotion) return;
+  const fire = fx.fire > 0;
+  const heat = clamp((game.combo - 2) / 10, 0, 1);
+  const tint = fire ? DROPS.fire.color : colors.safety;
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  if (heat > 0 || fire) {
+    const glow = ctx.createRadialGradient(W / 2, H, 10, W / 2, H, H * 0.85);
+    glow.addColorStop(0, tint);
+    glow.addColorStop(1, 'transparent');
+    ctx.globalAlpha = 0.12 * heat + (fire ? 0.1 : 0);
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, W, H);
+  }
+  ctx.fillStyle = tint;
+  for (const m of MOTES) {
+    const y = H + 10 - ((m.y * H + t * m.s) % (H + 20));
+    const x = m.x * W + Math.sin(t * m.w + m.p) * 12;
+    ctx.globalAlpha = (0.1 + 0.22 * heat + (fire ? 0.18 : 0)) * (0.6 + 0.4 * Math.sin(t * 2 * m.w + m.p));
+    ctx.beginPath();
+    ctx.arc(x, y, m.r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
 }
 
 function drawBanner() {
@@ -2816,11 +3135,7 @@ function render() {
   if (!canvas.width || !canvas.height) return;
   const t = performance.now() / 1000;
   ctx.setTransform(canvas.width / W, 0, 0, canvas.height / H, 0, 0);
-  const bg = ctx.createLinearGradient(0, 0, 0, H);
-  bg.addColorStop(0, colors.field);
-  bg.addColorStop(1, colors.field2);
-  ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, W, H);
+  drawBackdrop(t);
   if (game.shake > 0 && !reduceMotion) {
     // 폭발: 화면을 잠깐 흔듦
     const amp = 5 * (game.shake / 0.3);
@@ -2833,12 +3148,21 @@ function render() {
   drawHazard();
   drawFx();
   drawPaddle();
+  drawDrops();
   if (game.demo) drawDemoBoard();
   if (game.mode !== 'over') drawBall();
   if (!game.demo) drawCombo();
   if (game.demo) drawDemoHint();
   else if (game.banner) drawBanner();
   else if (game.mode === 'ready') drawHint();
+  if (game.flash > 0 && !reduceMotion) {
+    // 폭발 · 피버: 화면이 아주 잠깐 밝아짐 (눈부시지 않게 옅게)
+    ctx.setTransform(canvas.width / W, 0, 0, canvas.height / H, 0, 0);
+    ctx.globalAlpha = game.flash * 0.5;
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, W, H);
+    ctx.globalAlpha = 1;
+  }
 }
 
 /* ───────── 매 프레임 ───────── */
@@ -2863,16 +3187,21 @@ function update(dt) {
   if (game.mode === 'ready') placeOnPaddle();
   if (game.shake > 0) game.shake = Math.max(0, game.shake - dt);
   if (game.comboPop > 0) game.comboPop = Math.max(0, game.comboPop - dt);
+  if (game.flash > 0) game.flash = Math.max(0, game.flash - dt);
+  if (paddle.glow > 0) paddle.glow = Math.max(0, paddle.glow - dt * 3.5);
   if (game.mode === 'playing') {
     tickFx(dt);
+    updateDrops(dt);
     game.acc += dt;
     while (game.acc >= STEP && game.mode === 'playing') {
       stepBall(STEP);
       game.acc -= STEP;
     }
     if (game.mode === 'playing') {
-      ball.trail.push({ x: ball.x, y: ball.y });
-      if (ball.trail.length > 10) ball.trail.shift();
+      for (const b of [ball, ...extras]) {
+        b.trail.push({ x: b.x, y: b.y });
+        if (b.trail.length > 14) b.trail.shift();
+      }
     }
   }
   updateParticles(dt);
