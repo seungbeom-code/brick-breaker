@@ -64,6 +64,18 @@
     --st-gold: #5c5248;
     --st-meteor: #3d312d;
     --st-diamond: #c6eafb;
+    --st-pearl: #efe3ec;
+    --st-topaz: #6fbfd6;
+    --st-iron: #4c515b;
+    --st-repel: #6b5a8c;
+    --st-thunder: #2b3558;
+    --st-mist: #a9b6c6;
+    --st-tnt: #8e3030;
+    --st-lead: #6a7468;
+    --st-ruby: #c2284a;
+    --st-onyx: #17171c;
+    --st-storm: #3c4e6c;
+    --st-blackhole: #0c0616;
     --font-display: "Black Han Sans", "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
     --font-body: "IBM Plex Sans KR", "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
     color-scheme: light;
@@ -645,26 +657,41 @@ const WALLS = [
 // 레벨 순서: 기본 쌓기와 모양 있는 벽을 번갈아
 const WALL_ORDER = [0, 1, 5, 2, 6, 3, 7, 4, 8, 9, 10, 11, 12];
 
-/* ───────── 돌: 4레벨마다 새 돌이 하나씩 등장 ─────────
+/* ───────── 돌: 2레벨마다 새 돌이 하나씩 등장 (48레벨까지 24종) ─────────
    hp      깨는 데 필요한 횟수          pts     한 번 맞힐 때 점수
    max     한 벽에 들어가는 최대 개수   dark    어두운 돌 (금을 밝게 그림)
-   pierce  공이 튕기지 않고 뚫고 지나감 blast   깨지면 둘레 벽돌에 피해
+   pierce  공이 튕기지 않고 뚫고 지나감 blast   깨지면 둘레 벽돌에 피해 (2면 두 배로 넓게)
    fast · slow    맞으면 그 시간(초) 동안 공이 빨라짐 · 느려짐
+   narrow · sag   맞으면 그 시간(초) 동안 패들이 짧아짐 · 공이 아래로 휨
    wide · double  깨면 그 시간(초) 동안 패들이 길어짐 · 점수 두 배
-   pull    가까운 공을 끌어당김         scatter 공이 엉뚱한 각도로 튐
-   life    깨면 공을 하나 얻음 */
+   pull · repel   가까운 공을 끌어당김 · 밀어냄 (reach: 닿는 거리, force: 세기)
+   scatter 공이 엉뚱한 각도로 튐        life    깨면 공을 하나 얻음
+   combo   깨면 콤보가 이만큼 늘어남    strike  깨면 같은 줄 벽돌에 번개
+   mist    공이 가까워야 또렷하게 보임 */
 const STONES = [
-  { key: 'sand', name: '사암', from: 4, hp: 1, pts: 20, max: 8, pierce: true, tip: '무른 돌이라 공이 뚫고 지나가요.' },
+  { key: 'sand', name: '사암', from: 2, hp: 1, pts: 20, max: 8, pierce: true, tip: '무른 돌이라 공이 뚫고 지나가요.' },
+  { key: 'amber', name: '호박', from: 4, hp: 2, pts: 20, max: 3, slow: 8, tip: '맞으면 공이 한동안 느려져요.' },
+  { key: 'jade', name: '옥', from: 6, hp: 2, pts: 30, max: 2, wide: 12, tip: '깨면 패들이 한동안 길어져요.' },
   { key: 'granite', name: '화강암', from: 8, hp: 4, pts: 20, max: 4, tip: '단단해서 네 번 맞혀야 깨져요.' },
+  { key: 'pearl', name: '진주', from: 10, hp: 2, pts: 100, max: 3, tip: '두 번만 맞히면 깨지고 점수가 커요.' },
   { key: 'obsid', name: '흑요석', from: 12, hp: 2, pts: 20, max: 4, dark: true, fast: 6, tip: '맞으면 공이 한동안 빨라져요.' },
-  { key: 'blast', name: '발파석', from: 16, hp: 1, pts: 20, max: 4, dark: true, blast: true, tip: '깨지면 터져서 둘레 벽돌도 부숴요.' },
+  { key: 'blast', name: '발파석', from: 14, hp: 1, pts: 20, max: 4, dark: true, blast: true, tip: '깨지면 터져서 둘레 벽돌도 부숴요.' },
+  { key: 'marble', name: '대리석', from: 16, hp: 2, pts: 20, max: 5, scatter: true, tip: '미끄러워서 공이 엉뚱한 쪽으로 튀어요.' },
+  { key: 'topaz', name: '황옥', from: 18, hp: 2, pts: 30, max: 3, combo: 3, tip: '깨면 콤보가 3 늘어요.' },
   { key: 'lode', name: '자철석', from: 20, hp: 2, pts: 20, max: 3, dark: true, pull: true, tip: '가까이 지나가는 공을 끌어당겨요.' },
-  { key: 'jade', name: '옥', from: 24, hp: 2, pts: 30, max: 2, wide: 12, tip: '깨면 패들이 한동안 길어져요.' },
-  { key: 'marble', name: '대리석', from: 28, hp: 2, pts: 20, max: 5, scatter: true, tip: '미끄러워서 공이 엉뚱한 쪽으로 튀어요.' },
-  { key: 'quartz', name: '수정', from: 32, hp: 3, pts: 50, max: 1, life: true, tip: '깨면 공을 하나 더 얻어요.' },
-  { key: 'amber', name: '호박', from: 36, hp: 2, pts: 20, max: 3, slow: 8, tip: '맞으면 공이 한동안 느려져요.' },
-  { key: 'gold', name: '금광석', from: 40, hp: 3, pts: 50, max: 2, dark: true, double: 12, tip: '깨면 한동안 점수가 두 배예요.' },
+  { key: 'quartz', name: '수정', from: 22, hp: 3, pts: 50, max: 1, life: true, tip: '깨면 공을 하나 더 얻어요.' },
+  { key: 'iron', name: '흑철', from: 24, hp: 3, pts: 30, max: 3, dark: true, narrow: 8, tip: '맞으면 패들이 한동안 짧아져요.' },
+  { key: 'repel', name: '반발석', from: 26, hp: 2, pts: 20, max: 3, dark: true, repel: true, tip: '가까이 지나가는 공을 밀어내요.' },
+  { key: 'thunder', name: '번개석', from: 28, hp: 2, pts: 40, max: 2, dark: true, strike: true, tip: '깨면 같은 줄 벽돌에 번개가 쳐요.' },
+  { key: 'mist', name: '안개석', from: 30, hp: 1, pts: 30, max: 6, mist: true, tip: '공이 가까이 올 때만 또렷하게 보여요.' },
+  { key: 'gold', name: '금광석', from: 32, hp: 3, pts: 50, max: 2, dark: true, double: 12, tip: '깨면 한동안 점수가 두 배예요.' },
+  { key: 'tnt', name: '화약석', from: 34, hp: 1, pts: 30, max: 3, dark: true, blast: 2, tip: '깨지면 크게 터져서 넓게 부숴요.' },
+  { key: 'lead', name: '납', from: 36, hp: 3, pts: 30, max: 3, dark: true, sag: 6, tip: '맞으면 공이 한동안 아래로 휘어요.' },
+  { key: 'ruby', name: '루비', from: 38, hp: 3, pts: 70, max: 2, combo: 6, tip: '단단하고, 깨면 콤보가 6 늘어요.' },
+  { key: 'onyx', name: '오닉스', from: 40, hp: 5, pts: 40, max: 3, dark: true, tip: '다섯 번 맞혀야 깨지는 검은 돌이에요.' },
+  { key: 'storm', name: '폭풍석', from: 42, hp: 2, pts: 30, max: 3, dark: true, scatter: true, fast: 8, tip: '공이 엉뚱하게 튀고 맞으면 빨라져요.' },
   { key: 'meteor', name: '운석', from: 44, hp: 6, pts: 50, max: 2, dark: true, tip: '여섯 번 맞혀야 깨지고 점수가 커요.' },
+  { key: 'blackhole', name: '블랙홀석', from: 46, hp: 3, pts: 40, max: 2, dark: true, pull: true, reach: 240, force: 1.4, tip: '멀리서도 공을 세게 끌어당겨요.' },
   { key: 'diamond', name: '금강석', from: 48, hp: 8, pts: 100, max: 1, tip: '여덟 번 맞혀야 깨지는 가장 단단한 돌이에요.' },
 ];
 
@@ -674,6 +701,8 @@ const FX = {
   slow: { label: '공 느림', good: true },
   wide: { label: '긴 패들', good: true },
   double: { label: '점수 2배', good: true },
+  narrow: { label: '짧은 패들', good: false },
+  sag: { label: '공 무거움', good: false },
 };
 
 // 떨어지는 금화: 패들로 받으면 점수. 받든 못 받든 공의 움직임에는 영향이 없음
@@ -777,8 +806,8 @@ let particles = [];
 let drops = []; // 벽돌에서 떨어지는 보물
 const paddle = { x: W / 2, target: W / 2, y: H - PADDLE_GAP - PADDLE_H, w: 86, baseW: 86, h: PADDLE_H, vx: 0, bubble: 0, glow: 0 };
 const ball = { x: W / 2, y: 0, vx: 0, vy: 0, r: BALL_R, speed: 290, stuck: true, trail: [] };
-const fx = { fast: 0, slow: 0, wide: 0, double: 0 }; // 효과별 남은 시간(초)
-const fxFull = { fast: 1, slow: 1, wide: 1, double: 1 }; // 효과가 시작될 때의 시간 (남은 시간 막대용)
+const fx = { fast: 0, slow: 0, wide: 0, double: 0, narrow: 0, sag: 0 }; // 효과별 남은 시간(초)
+const fxFull = { fast: 1, slow: 1, wide: 1, double: 1, narrow: 1, sag: 1 }; // 효과가 시작될 때의 시간 (남은 시간 막대용)
 const keys = { left: false, right: false };
 const overlayActions = { primary: null, secondary: null, back: null };
 let colors = {};
@@ -872,6 +901,8 @@ const sound = {
   key() { this.tone(660, 0.03, 'triangle', 0.05); },
   coin() { this.tone(1320, 0.06, 'square', 0.04); this.tone(1760, 0.16, 'square', 0.04, 0, 0.06); },
   fever() { [392, 523, 659, 784, 1047, 1319].forEach((f, i) => this.tone(f, 0.14, 'sawtooth', 0.04, 0, i * 0.045)); },
+  dull() { this.tone(230, 0.14, 'sawtooth', 0.04, 110); },
+  thunder() { this.noise(0.3, 2600, 0.45); this.tone(1900, 0.22, 'sawtooth', 0.05, 260); },
   step(n) { this.tone(Math.min(1760, 392 * Math.pow(1.122, n - 2)), 0.09, 'triangle', 0.05); },
 };
 
@@ -1059,7 +1090,7 @@ function buildLevel(n) {
     });
   }
   game.newStone = placeStones(n);
-  game.lodes = bricks.filter((k) => k.kind && k.kind.pull);
+  game.lodes = bricks.filter((k) => k.kind && (k.kind.pull || k.kind.repel));
   game.remaining = bricks.length;
   game.wallName = plan.name;
   if (game.newStone) game.wallTip = game.newStone.tip;
@@ -1080,10 +1111,10 @@ function placeStones(n) {
   const rand = mulberry32(n * 15485863 + 11);
   const newest = unlocked[unlocked.length - 1];
   const debut = newest.from === n ? newest : null;
-  // 새로 나온 돌은 세 레벨 동안 꼭 넣고, 나머지는 레벨마다 바꿔 가며 모두 2~3종
-  const picks = n - newest.from < 3 ? [newest] : [];
+  // 새로 나온 돌은 두 레벨 동안 꼭 넣고, 나머지는 레벨마다 바꿔 가며 모두 2~4종 (21레벨부터 한 종류 더)
+  const picks = n - newest.from < 2 ? [newest] : [];
   const pool = unlocked.filter((s) => !picks.includes(s));
-  const kinds = Math.min(unlocked.length, debut ? 2 : 3);
+  const kinds = Math.min(unlocked.length, (debut ? 2 : 3) + (tierOf(n) >= 2 ? 1 : 0));
   while (picks.length < kinds && pool.length) picks.push(pool.splice(Math.floor(rand() * pool.length), 1)[0]);
   // 돌로 바꿀 자리: 일반 벽돌 가운데 고르되, 맞히기 힘든 벽 끝의 좁은 조각은 뺌
   const spots = bricks.filter((k) => k.maxHp === 1 && !(k.w < 40 && (k.x < 3 || k.x + k.w > W - 6)));
@@ -1211,6 +1242,7 @@ function stepBall(dt) {
   }
 
   pullBall(dt);
+  if (fx.sag > 0) setVelocity(ball.vx, ball.vy + ball.speed * speedMul() * 0.35 * dt); // 납: 공이 아래로 휨
   if (ball.vy > 0) hitPaddle();
   hitBricks();
   if (game.remaining <= 0) levelClear();
@@ -1226,8 +1258,9 @@ function pullBall(dt) {
     const dx = k.x + k.w / 2 - ball.x;
     const dy = k.y + k.h / 2 - ball.y;
     const d = Math.hypot(dx, dy);
-    if (d > PULL_R || d < 1) continue;
-    const f = 1 - d / PULL_R; // 가까울수록 세게
+    const reach = k.kind.reach || PULL_R;
+    if (d > reach || d < 1) continue;
+    const f = (1 - d / reach) * (k.kind.force || 1) * (k.kind.repel ? -1 : 1); // 가까울수록 세게
     ax += (dx / d) * f;
     ay += (dy / d) * f;
   }
@@ -1350,6 +1383,16 @@ function damageBrick(k) {
     startFx('slow', s.slow);
     sound.blub();
   }
+  if (s && s.narrow) {
+    if (fx.narrow <= 0) floater('패들이 짧아져요', k, colors.bad);
+    startFx('narrow', s.narrow);
+    sound.dull();
+  }
+  if (s && s.sag) {
+    if (fx.sag <= 0) floater('공이 무거워요', k, colors.bad);
+    startFx('sag', s.sag);
+    sound.dull();
+  }
   if (k.hp > 0) {
     k.flash = 1;
     if (s) sound.clink();
@@ -1358,13 +1401,14 @@ function damageBrick(k) {
   }
   k.alive = false;
   game.remaining -= 1;
-  game.combo += 1;
+  const before = game.combo;
+  game.combo += 1 + (s && s.combo ? s.combo : 0);
   game.comboPop = 0.18;
   burst(k, brickColor(k));
   sound.crumble();
   if (game.combo >= 3) sound.step(game.combo); // 콤보가 이어질수록 음이 올라감
   if (game.combo >= COMBO_MIN) game.shake = Math.max(game.shake, 0.08);
-  if (game.combo === FEVER_AT) fever();
+  if (before < FEVER_AT && game.combo >= FEVER_AT) fever();
   maybeDrop(k);
   ball.speed = Math.min(ball.speed + 2.5, baseSpeed() * 1.35);
   if (!ball.stuck) setVelocity(ball.vx, ball.vy);
@@ -1379,22 +1423,39 @@ function damageBrick(k) {
     floater('점수 2배', k, colors.good);
     sound.chime();
   }
+  if (s.combo) {
+    floater(`콤보 +${s.combo}`, k, colors.safety);
+    sound.chime();
+  }
   if (s.life) gainLife(k);
   if (s.blast) explode(k);
+  if (s.strike) strike(k);
+}
+
+// 번개석: 같은 줄에 남은 벽돌 모두에 피해를 한 번씩
+function strike(k) {
+  const row = bricks.filter((b) => b.alive && Math.abs(b.y - k.y) < 1);
+  game.flash = 0.18;
+  game.shake = Math.max(game.shake, 0.14);
+  sound.thunder();
+  buzz(20);
+  for (const b of row) sparks(b.x + b.w / 2, b.y + b.h / 2, '#ffe36a', 8, 210);
+  for (const b of row) if (b.alive) damageBrick(b);
 }
 
 // 발파석: 둘레(위아래 한 켜, 옆으로 한 장)에 있는 벽돌에 피해를 한 번씩. 옆의 발파석도 연달아 터짐
 function explode(k) {
+  const m = k.kind && k.kind.blast === 2 ? 2 : 1; // 화약석은 두 배로 넓게
   const near = bricks.filter(
-    (b) => b.alive && b.x < k.x + k.w + 30 && b.x + b.w > k.x - 30 && b.y < k.y + k.h + COURSE && b.y + b.h > k.y - COURSE,
+    (b) => b.alive && b.x < k.x + k.w + 30 * m && b.x + b.w > k.x - 30 * m && b.y < k.y + k.h + COURSE * m && b.y + b.h > k.y - COURSE * m,
   );
   game.shake = 0.3;
   game.flash = 0.22;
-  sparks(k.x + k.w / 2, k.y + k.h / 2, DROPS.blast.color, 22, 300);
+  sparks(k.x + k.w / 2, k.y + k.h / 2, DROPS.blast.color, 22 * m, 300);
   sound.boom();
   buzz(30);
   if (!reduceMotion) {
-    particles.push({ ring: true, big: true, x: k.x + k.w / 2, y: k.y + k.h / 2, life: 0, max: 0.45, color: colors.safety });
+    particles.push({ ring: true, big: true, x: k.x + k.w / 2, y: k.y + k.h / 2, life: 0, max: 0.45 * m, color: colors.safety });
   }
   for (const b of near) if (b.alive) damageBrick(b);
 }
@@ -1827,7 +1888,7 @@ function showMenu() {
     ['단단한 벽돌', '클링커 2번, 내화벽돌 3번'],
     ['콤보', '공이 패들에 닿기 전에 5개 이상 연달아 깨면 개수 × 50점, 10개면 피버 +500'],
     ['금화', '벽돌에서 가끔 떨어지는 금화를 패들로 받으면 +200점'],
-    ['레벨', '4레벨마다 새 돌이 나오고, 10레벨마다 난이도가 오르고 공을 하나 받아요'],
+    ['레벨', '2레벨마다 새 돌이 나오고, 10레벨마다 난이도가 오르고 공을 하나 받아요'],
   ];
   if (game.best > 0) spec.push(['내 최고 기록', `${fmt(game.best)}점`]);
   const top = ranks.rows[0];
@@ -2185,7 +2246,7 @@ function showCodex(back) {
   }
   showOverlay({
     view: 'codex',
-    eyebrow: '4레벨마다 하나씩 나와요',
+    eyebrow: '2레벨마다 하나씩 나와요 · 모두 24종',
     title: '돌 도감',
     custom: [list],
     primary: ['돌아가기', back],
@@ -2376,6 +2437,32 @@ function twinkle(c, x, y, phase, t) {
   c.globalAlpha = 1;
 }
 
+// 보석 모양 (황옥 · 루비)
+function gemShape(c, x, y, w, h, fill, line) {
+  const cx = x + w / 2;
+  const gw = Math.min(w * 0.55, 17);
+  c.fillStyle = fill;
+  c.beginPath();
+  c.moveTo(cx - gw / 2, y + h * 0.4);
+  c.lineTo(cx - gw * 0.28, y + h * 0.14);
+  c.lineTo(cx + gw * 0.28, y + h * 0.14);
+  c.lineTo(cx + gw / 2, y + h * 0.4);
+  c.lineTo(cx, y + h * 0.9);
+  c.closePath();
+  c.fill();
+  c.strokeStyle = line;
+  c.lineWidth = 0.7;
+  c.beginPath();
+  c.moveTo(cx - gw / 2, y + h * 0.4);
+  c.lineTo(cx + gw / 2, y + h * 0.4);
+  c.moveTo(cx - gw * 0.28, y + h * 0.14);
+  c.lineTo(cx - gw * 0.1, y + h * 0.4);
+  c.lineTo(cx, y + h * 0.9);
+  c.moveTo(cx + gw * 0.28, y + h * 0.14);
+  c.lineTo(cx + gw * 0.1, y + h * 0.4);
+  c.stroke();
+}
+
 // 돌마다 다른 무늬. d: 0~1 난수 18개(무늬 위치), t: 시각(초)
 function drawStoneDeco(c, key, x, y, w, h, d, t) {
   c.save();
@@ -2535,6 +2622,142 @@ function drawStoneDeco(c, key, x, y, w, h, d, t) {
       twinkle(c, x + w * (0.2 + d[0] * 0.6), y + h * 0.35, d[1], t);
       break;
     }
+    case 'pearl': { // 둥근 진주알
+      const r = Math.min(h * 0.36, 5);
+      const px = x + w * (0.3 + d[0] * 0.4);
+      const g = c.createRadialGradient(px - r * 0.3, y + h / 2 - r * 0.3, 0.3, px, y + h / 2, r);
+      g.addColorStop(0, '#ffffff');
+      g.addColorStop(0.6, 'rgba(250, 226, 240, 0.95)');
+      g.addColorStop(1, 'rgba(200, 160, 200, 0.9)');
+      c.fillStyle = g;
+      c.beginPath();
+      c.arc(px, y + h / 2, r, 0, Math.PI * 2);
+      c.fill();
+      twinkle(c, px + r * 0.5, y + h * 0.3, d[1], t);
+      break;
+    }
+    case 'topaz':
+      gemShape(c, x, y, w, h, 'rgba(255, 255, 255, 0.4)', 'rgba(255, 255, 255, 0.85)');
+      twinkle(c, x + w * (0.25 + d[0] * 0.5), y + h * 0.3, d[1], t);
+      break;
+    case 'ruby':
+      gemShape(c, x, y, w, h, 'rgba(255, 200, 210, 0.38)', 'rgba(255, 235, 238, 0.85)');
+      twinkle(c, x + w * (0.25 + d[0] * 0.5), y + h * 0.3, d[1], t);
+      break;
+    case 'iron': // 띠와 대갈못
+      c.fillStyle = 'rgba(255, 255, 255, 0.16)';
+      c.fillRect(x, y + h * 0.45, w, 1.3);
+      c.fillStyle = 'rgba(255, 255, 255, 0.5)';
+      for (const [rx, ry] of [[3, 3], [w - 3, 3], [3, h - 3], [w - 3, h - 3]]) {
+        c.beginPath();
+        c.arc(x + rx, y + ry, 1.1, 0, Math.PI * 2);
+        c.fill();
+      }
+      break;
+    case 'repel': { // 바깥으로 향한 화살
+      const cy = y + h / 2;
+      c.fillStyle = 'rgba(255, 255, 255, 0.6)';
+      c.beginPath();
+      c.moveTo(x + w * 0.42, cy - 3.2);
+      c.lineTo(x + w * 0.26, cy);
+      c.lineTo(x + w * 0.42, cy + 3.2);
+      c.moveTo(x + w * 0.58, cy - 3.2);
+      c.lineTo(x + w * 0.74, cy);
+      c.lineTo(x + w * 0.58, cy + 3.2);
+      c.fill();
+      break;
+    }
+    case 'thunder': { // 번개 무늬
+      const bx = x + w / 2;
+      c.globalAlpha = reduceMotion ? 1 : 0.7 + 0.3 * Math.sin(t * 6 + d[0] * 6);
+      c.fillStyle = '#ffe36a';
+      c.beginPath();
+      c.moveTo(bx + 1.8, y + 0.8);
+      c.lineTo(bx - 3.2, y + h * 0.55);
+      c.lineTo(bx, y + h * 0.55);
+      c.lineTo(bx - 1.8, y + h - 0.8);
+      c.lineTo(bx + 4, y + h * 0.4);
+      c.lineTo(bx + 1, y + h * 0.4);
+      c.closePath();
+      c.fill();
+      c.globalAlpha = 1;
+      break;
+    }
+    case 'mist': // 일렁이는 안개결
+      c.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+      c.lineWidth = 1;
+      for (let i = 0; i < 2; i++) {
+        const sway = reduceMotion ? 0 : Math.sin(t * 1.6 + i) * 2;
+        c.beginPath();
+        c.moveTo(x - 2, y + h * (0.35 + i * 0.3));
+        c.bezierCurveTo(x + w * 0.3, y + h * (0.05 + i * 0.3) + sway, x + w * 0.6, y + h * (0.8 + i * 0.1) - sway, x + w + 2, y + h * (0.4 + i * 0.25));
+        c.stroke();
+      }
+      break;
+    case 'tnt': // 붉은 통에 두른 띠와 글자
+      c.fillStyle = 'rgba(0, 0, 0, 0.3)';
+      c.fillRect(x, y + h * 0.2, w, 1.4);
+      c.fillRect(x, y + h * 0.78, w, 1.4);
+      if (w >= 18) {
+        c.fillStyle = 'rgba(255, 236, 205, 0.92)';
+        c.font = `800 7px ${fonts.body}`;
+        c.textAlign = 'center';
+        c.textBaseline = 'middle';
+        c.fillText('TNT', x + w / 2, y + h / 2 + 0.6);
+      }
+      break;
+    case 'lead': // 아래로 향한 화살과 묵직한 얼룩
+      c.fillStyle = 'rgba(255, 255, 255, 0.42)';
+      c.beginPath();
+      c.moveTo(x + w / 2 - 4.2, y + h * 0.3);
+      c.lineTo(x + w / 2 + 4.2, y + h * 0.3);
+      c.lineTo(x + w / 2, y + h * 0.78);
+      c.closePath();
+      c.fill();
+      c.fillStyle = 'rgba(0, 0, 0, 0.25)';
+      for (let i = 0; i < 4; i++) c.fillRect(x + 1.5 + d[i] * (w - 4), y + 1.5 + d[i + 4] * (h - 4), 2, 1.4);
+      break;
+    case 'onyx': { // 검은 광택과 금줄
+      const sx = x + w * (0.15 + d[0] * 0.3);
+      c.fillStyle = 'rgba(255, 255, 255, 0.14)';
+      c.beginPath();
+      c.moveTo(sx, y + h);
+      c.lineTo(sx + h * 0.8, y);
+      c.lineTo(sx + h * 0.8 + w * 0.1, y);
+      c.lineTo(sx + w * 0.1, y + h);
+      c.closePath();
+      c.fill();
+      c.fillStyle = 'rgba(214, 172, 62, 0.75)';
+      c.fillRect(x, y + h * 0.5 - 0.6, w, 1.2);
+      break;
+    }
+    case 'storm': { // 소용돌이
+      c.strokeStyle = 'rgba(205, 228, 255, 0.65)';
+      c.lineWidth = 1;
+      for (let i = 0; i < 2; i++) {
+        const a0 = reduceMotion ? i * 2 : t * 3.2 + i * 2.4;
+        c.beginPath();
+        c.arc(x + w * (0.3 + i * 0.4), y + h / 2, 3 + i * 0.6, a0, a0 + Math.PI * 1.45);
+        c.stroke();
+      }
+      break;
+    }
+    case 'blackhole': { // 빨려 드는 보랏빛 고리
+      const cx = x + w / 2;
+      const cy = y + h / 2;
+      for (let i = 0; i < 3; i++) {
+        c.strokeStyle = `rgba(185, 140, 255, ${0.65 - i * 0.18})`;
+        c.lineWidth = 1;
+        c.beginPath();
+        c.ellipse(cx, cy, w * (0.15 + i * 0.12), h * (0.17 + i * 0.12), 0, 0, Math.PI * 2);
+        c.stroke();
+      }
+      c.fillStyle = '#000';
+      c.beginPath();
+      c.ellipse(cx, cy, w * 0.09, h * 0.12, 0, 0, Math.PI * 2);
+      c.fill();
+      break;
+    }
     default:
       break;
   }
@@ -2556,15 +2779,18 @@ function drawStoneFace(c, s, x, y, w, h, d, t, sheen = null) {
 
 // 자철석이 끌어당기는 범위: 돌 쪽으로 좁혀 드는 고리로 보여 줌
 function drawPull(t) {
-  ctx.strokeStyle = colors.poleS;
   ctx.lineWidth = 1.2;
   for (const k of game.lodes) {
     if (!k.alive) continue;
+    const reach = k.kind.reach || PULL_R;
+    const out = !!k.kind.repel; // 반발석은 바깥으로 퍼지는 고리, 끌어당기는 돌은 좁혀 드는 고리
+    ctx.strokeStyle = out ? colors.bad : k.kind.reach ? colors.stone.blackhole && '#b98cff' : colors.poleS;
     for (let i = 0; i < 3; i++) {
-      const f = reduceMotion ? (i + 1) / 3 : 1 - ((t * 0.45 + i / 3) % 1);
-      ctx.globalAlpha = 0.34 * f;
+      const p = reduceMotion ? (i + 1) / 3 : (t * 0.45 + i / 3) % 1;
+      const f = out ? p : 1 - p;
+      ctx.globalAlpha = 0.34 * (out ? 1 - p : f);
       ctx.beginPath();
-      ctx.arc(k.x + k.w / 2, k.y + k.h / 2, 12 + (PULL_R - 12) * f, 0, Math.PI * 2);
+      ctx.arc(k.x + k.w / 2, k.y + k.h / 2, 12 + (reach - 12) * f, 0, Math.PI * 2);
       ctx.stroke();
     }
   }
@@ -2592,6 +2818,11 @@ function drawWall(t) {
       sheen = makeSheen(ctx, k.y, k.h);
       sheens.set(k.y, sheen);
     }
+    if (k.kind && k.kind.mist) {
+      // 안개석: 공이 가까이 오거나 맞은 직후에만 또렷함
+      const near = Math.hypot(ball.x - (k.x + k.w / 2), ball.y - (k.y + k.h / 2));
+      ctx.globalAlpha = Math.max(0.2, Math.min(1, 1.25 - near / 150), k.flash);
+    }
     if (k.kind) {
       drawStoneFace(ctx, k.kind, k.x, k.y, k.w, k.h, k.deco, t, sheen);
     } else {
@@ -2607,6 +2838,7 @@ function drawWall(t) {
       ctx.fillStyle = colors.speck;
       for (const [sx, sy] of k.specks) ctx.fillRect(sx, sy, 1.5, 1.5);
     }
+    ctx.globalAlpha = 1;
     const damage = k.maxHp - k.hp;
     if (damage > 0 && k.cracks) {
       // 돌은 깨질 때까지 금이 고르게 늘어남 (여덟 번 맞는 돌도 금은 네 줄까지)
@@ -3077,7 +3309,7 @@ function update(dt) {
     if (keys.left) paddle.target -= KEY_SPEED * dt;
     if (keys.right) paddle.target += KEY_SPEED * dt;
     // 패들 길이: 옥을 깨면 한동안 길어졌다가 부드럽게 돌아옴
-    const wantW = paddle.baseW * (fx.wide > 0 ? 1.45 : 1);
+    const wantW = paddle.baseW * (fx.wide > 0 ? 1.45 : 1) * (fx.narrow > 0 ? 0.7 : 1);
     paddle.w += (wantW - paddle.w) * Math.min(1, dt * 10);
     if (Math.abs(wantW - paddle.w) < 0.3) paddle.w = wantW;
     paddle.target = clamp(paddle.target, paddle.w / 2, W - paddle.w / 2);
